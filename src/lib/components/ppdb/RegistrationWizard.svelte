@@ -17,14 +17,20 @@
   let {
     category,
     academicYear,
-    total
+    total,
+    mode = "online",
+    categoryHref = "/ppdb",
+    endpoint = "/api/ppdb/registrations"
   }: {
     category: { code: string; name: string; institutionName: string };
     academicYear: string;
     total: number;
+    mode?: "online" | "offline";
+    categoryHref?: string;
+    endpoint?: string;
   } = $props();
 
-  const storageKey = $derived(`ppdb-draft-${category.code}`);
+  const storageKey = $derived(`ppdb-draft-${mode}-${category.code}`);
 
   let draft = $state<RegistrationDraft>(createEmptyDraft(""));
   let step = $state(1);
@@ -163,7 +169,7 @@
         formData.append(`doc:${key}`, file);
       }
 
-      const response = await fetch("/api/ppdb/registrations", {
+      const response = await fetch(endpoint, {
         method: "POST",
         body: formData
       });
@@ -180,7 +186,12 @@
       }
 
       localStorage.removeItem(storageKey);
-      await goto(`/ppdb/sukses/${result.code}`);
+
+      if (mode === "offline" && result.id) {
+        await goto(`/admin/pendaftaran/${result.id}`);
+      } else {
+        await goto(`/ppdb/sukses/${result.code}`);
+      }
     } catch {
       errors = ["Tidak dapat menghubungi server. Periksa koneksi lalu coba lagi."];
       submitting = false;
@@ -220,7 +231,7 @@
 
 <div class="mx-auto max-w-6xl px-4 py-8">
   <div class="mb-6">
-    <a href="/ppdb" class="text-sm font-medium text-brand-700 hover:underline">← Pilih kategori lain</a>
+    <a href={categoryHref} class="text-sm font-medium text-brand-700 hover:underline">← Pilih kategori lain</a>
     <h1 class="mt-2 text-2xl font-bold text-stone-900">Formulir Pendaftaran Santri Baru</h1>
     <p class="mt-1 text-sm text-stone-500">
       {category.institutionName} · Tahun ajaran {academicYear}

@@ -38,6 +38,7 @@ Husna, Jl. Balekambang Km.01, Selomerto, Wonosobo.
 - Login, dashboard ringkasan
 - Data master: kategori santri, gelombang, paket biaya per kategori
 - Daftar pendaftar + pencarian/filter status
+- Input pendaftaran offline langsung dari panel
 - Detail pendaftar, verifikasi, terima/tolak, check-in asrama
 - Verifikasi pembayaran + pratinjau bukti
 - Pengaturan identitas pondok dan rekening
@@ -115,8 +116,9 @@ APP_SECRET=string-acak-panjang
 6. Bukti transfer diunggah, lalu diverifikasi pengurus di `/admin/pembayaran`.
 7. Saat tiba di asrama, pengurus menandai check-in di detail pendaftar.
 
-Pendaftaran offline diinput pengurus melalui panel admin (form input asrama
-masih dalam tahap pengembangan).
+Pendaftaran offline diinput pengurus melalui **Admin → Pendaftaran → Pendaftaran
+offline**: pilih kategori, isi formulir yang sama, lalu kode pendaftaran langsung
+terbit dan tercatat sebagai pendaftaran offline.
 
 Tombol "Daftar Sekarang" di beranda tetap mengarah ke `/ppdb`; jika belum ada
 gelombang yang dibuka, halaman PPDB menampilkan jadwal gelombang berikutnya.
@@ -183,5 +185,5 @@ data/uploads/             file upload (tidak publik)
 ## Version control
 
 Repository lokal memakai Git pada branch `main`. File `.env` dan `data/uploads`
-tidak ikut di-commit.
+tidak ikut di-commit. Commit dibuat setelah satu revisi selesai dan sudah diuji.
 
