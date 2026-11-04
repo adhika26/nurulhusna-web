@@ -179,3 +179,9 @@ data/uploads/             file upload (tidak publik)
 - Cek status memerlukan kode + nomor HP yang cocok, dengan pembatasan percobaan.
 - Semua aksi admin penting dicatat di tabel `audit_log`.
 - Cookie sesi `HttpOnly` + `SameSite=Lax`; password di-hash Argon2.
+
+## Version control
+
+Repository lokal memakai Git pada branch `main`. File `.env` dan `data/uploads`
+tidak ikut di-commit.
+
