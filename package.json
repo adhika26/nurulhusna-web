@@ -19,6 +19,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "npx tsx scripts/seed.ts",
+    "db:seed-dummy": "npx tsx scripts/seed-dummy.ts",
     "db:import-wilayah": "npx tsx scripts/import-wilayah.ts",
     "create:admin": "npx tsx scripts/create-admin.ts"
   },
@@ -33,6 +34,7 @@
     "prettier": "^3.6.2",
     "prettier-plugin-svelte": "^3.4.0",
     "prettier-plugin-tailwindcss": "^0.6.14",
+    "sharp": "^0.35.5",
     "svelte": "^5.39.5",
     "svelte-check": "^4.3.2",
     "tailwindcss": "^4.1.13",

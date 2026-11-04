@@ -89,6 +89,7 @@ Buka:
 | `npm run db:migrate` | Jalankan migrasi |
 | `npm run db:studio` | Drizzle Studio |
 | `npm run db:seed` | Seed data master |
+| `npm run db:seed-dummy` | Buat data contoh galeri dan berita |
 | `npm run db:import-wilayah` | Impor data wilayah Indonesia |
 | `npm run create:admin -- ...` | Buat/perbarui akun pengurus |
 
@@ -181,6 +182,17 @@ data/uploads/             file upload (tidak publik)
 - Cek status memerlukan kode + nomor HP yang cocok, dengan pembatasan percobaan.
 - Semua aksi admin penting dicatat di tabel `audit_log`.
 - Cookie sesi `HttpOnly` + `SameSite=Lax`; password di-hash Argon2.
+
+## Data contoh
+
+Untuk mengecek tampilan galeri dan berita tanpa konten asli:
+
+```bash
+npm run db:seed-dummy
+npm run db:seed-dummy -- --clean   # hapus data contoh
+```
+
+Data contoh diberi label "Contoh" dan sebaiknya dihapus sebelum website live.
 
 ## Version control
 
