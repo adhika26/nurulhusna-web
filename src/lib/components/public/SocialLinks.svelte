@@ -6,7 +6,17 @@
     tiktok: string;
   };
 
-  let { links }: { links: SocialLinks } = $props();
+  let { links, variant = "dark" }: { links: SocialLinks; variant?: "dark" | "light" } = $props();
+
+  const linkClass = $derived(
+    variant === "light"
+      ? "bg-brand-100 text-brand-700 hover:bg-brand-200"
+      : "bg-white/10 text-brand-100 hover:bg-white/20 hover:text-white"
+  );
+
+  const emptyClass = $derived(
+    variant === "light" ? "bg-brand-100/70 text-brand-500" : "bg-white/5 text-brand-200 opacity-50"
+  );
 
   const icons = {
     facebook:
@@ -37,7 +47,7 @@
             target="_blank"
             rel="noopener noreferrer"
             aria-label={item.label}
-            class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-brand-100 hover:bg-white/20 hover:text-white"
+            class="flex h-10 w-10 items-center justify-center rounded-full {linkClass}"
           >
             <svg viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" aria-hidden="true">
               <path d={item.path} />
@@ -47,7 +57,7 @@
           <span
             aria-label="{item.label} belum diatur"
             title="{item.label} belum diatur"
-            class="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-brand-200 opacity-50"
+            class="flex h-10 w-10 items-center justify-center rounded-full {emptyClass} opacity-50"
           >
             <svg viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor" aria-hidden="true">
               <path d={item.path} />

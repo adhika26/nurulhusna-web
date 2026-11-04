@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { Menu, X, MapPin, Phone, Mail } from "@lucide/svelte";
+  import { Menu, X, MapPin, Phone, Mail, ExternalLink } from "@lucide/svelte";
   import SocialLinks from "$lib/components/public/SocialLinks.svelte";
   import type { LayoutData } from "./$types";
 
@@ -35,6 +35,20 @@
       menuButton?.focus();
     }
   }
+
+  const mapsQuery = $derived(
+    data.site.coordinates.latitude && data.site.coordinates.longitude
+      ? `${data.site.coordinates.latitude},${data.site.coordinates.longitude}`
+      : data.site.address
+  );
+
+  const mapsUrl = $derived(
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
+  );
+
+  const mapsEmbedUrl = $derived(
+    `https://www.google.com/maps?q=${encodeURIComponent(mapsQuery)}&z=16&output=embed`
+  );
 </script>
 
 <svelte:window onkeydown={handleEscape} />
@@ -197,6 +211,26 @@
               </li>
             {/if}
           </ul>
+
+          <div class="relative mt-4 overflow-hidden rounded-xl bg-brand-100 ring-1 ring-white/10">
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="absolute top-2 left-2 z-10 inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-brand-800 shadow-sm hover:bg-brand-50"
+            >
+              Buka di Maps
+              <ExternalLink class="h-3 w-3" aria-hidden="true" />
+            </a>
+            <iframe
+              src={mapsEmbedUrl}
+              title="Lokasi Pondok Pesantren Nurul Husna"
+              width="400"
+              height="220"
+              referrerpolicy="no-referrer-when-downgrade"
+              class="h-44 w-full bg-brand-100"
+            ></iframe>
+          </div>
         </div>
       </div>
 

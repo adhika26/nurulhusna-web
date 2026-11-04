@@ -18,7 +18,7 @@
   lead="Sarana yang menunjang kegiatan belajar dan kehidupan santri di pondok."
 />
 
-<section class="mx-auto max-w-7xl px-4 py-12">
+<section class="mx-auto max-w-7xl px-4 py-12 sm:py-14">
   {#if data.page}
     <article class="article max-w-3xl">
       {@html data.page.html}
@@ -30,7 +30,16 @@
   {/if}
 
   {#if data.gallery.length > 0}
-    <div class="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3">
+    <div class="mt-12 flex flex-wrap items-end justify-between gap-3">
+      <h2 class="text-2xl font-extrabold tracking-tight text-stone-900 sm:text-3xl">
+        Dokumentasi fasilitas
+      </h2>
+      <a href="/galeri" class="text-sm font-bold text-brand-700 hover:text-brand-900">
+        Lihat galeri
+      </a>
+    </div>
+
+    <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
       {#each data.gallery as item (item.id)}
         {#if item.imageUrl}
           <figure class="overflow-hidden rounded-lg bg-stone-100">

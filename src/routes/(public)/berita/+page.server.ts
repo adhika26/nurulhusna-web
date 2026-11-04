@@ -1,4 +1,4 @@
-import { getPublishedPosts } from "$lib/server/content/content.service";
+import { getPublishedPosts, mediaUrl } from "$lib/server/content/content.service";
 import type { PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async () => {
@@ -10,7 +10,8 @@ export const load: PageServerLoad = async () => {
       title: post.title,
       excerpt: post.excerpt,
       category: post.category,
-      publishedAt: post.publishedAt
+      publishedAt: post.publishedAt,
+      coverUrl: mediaUrl(post.coverImage)
     }))
   };
 };

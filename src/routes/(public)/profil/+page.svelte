@@ -18,7 +18,7 @@
   lead="Pondok Pesantren Nurul Husna berada di Selomerto, Wonosobo, dan menaungi pendidikan formal MI serta MTs di bawah Yayasan Nurul Husna."
 />
 
-<section class="mx-auto max-w-7xl px-4 py-12">
+<section class="mx-auto max-w-7xl px-4 py-12 sm:py-14">
   <div class="grid gap-10 lg:grid-cols-[1.7fr_1fr]">
     <div>
       {#if data.page}
@@ -54,7 +54,7 @@
         <p class="mt-1 text-sm text-brand-100">Lihat jadwal gelombang dan kategori santri.</p>
         <a
           href="/ppdb"
-          class="mt-3 inline-flex min-h-11 items-center rounded-lg bg-white px-4 text-sm font-semibold text-brand-900 hover:bg-brand-50"
+          class="mt-3 inline-flex min-h-11 items-center rounded-full bg-white px-4 text-sm font-semibold text-brand-900 hover:bg-brand-50"
         >
           Buka halaman pendaftaran
         </a>

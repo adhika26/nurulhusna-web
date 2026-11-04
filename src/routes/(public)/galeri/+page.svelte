@@ -18,7 +18,7 @@
   lead="Suasana kegiatan dan lingkungan pondok."
 />
 
-<section class="mx-auto max-w-7xl px-4 py-12">
+<section class="mx-auto max-w-7xl px-4 py-12 sm:py-14">
   {#if data.gallery.length === 0}
     <div class="max-w-2xl rounded-2xl border border-dashed border-stone-300 bg-white p-6">
       <p class="text-stone-600">Belum ada foto yang dipublikasikan.</p>

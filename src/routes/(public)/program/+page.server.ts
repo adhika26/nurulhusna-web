@@ -21,6 +21,7 @@ export const load: PageServerLoad = async () => {
       code: category.code,
       name: category.name,
       institutionName: category.institutionName,
+      educationLevel: category.educationLevel,
       gradeRange: category.gradeRange,
       description: category.description
     }))

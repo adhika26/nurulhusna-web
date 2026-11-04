@@ -50,12 +50,12 @@
 </svelte:head>
 
 <section class="bg-white">
-  <div class="mx-auto grid max-w-7xl gap-10 px-4 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-20">
+  <div class="mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 lg:grid-cols-[1.05fr_0.95fr] lg:py-16">
     <div>
       <p class="text-sm font-bold tracking-wide text-brand-700 uppercase">
         Pendidikan Islam di Selomerto
       </p>
-      <h1 class="mt-3 text-4xl leading-[1.08] font-extrabold tracking-tight text-stone-900 sm:text-5xl lg:text-[3.6rem]">
+      <h1 class="mt-3 text-4xl leading-[1.08] font-extrabold tracking-tight text-stone-900 sm:text-5xl lg:text-[3.4rem]">
         Tumbuh dalam ilmu,
         <span class="text-brand-700">akhlak, dan kemandirian</span>
       </h1>
@@ -79,7 +79,7 @@
         </a>
       </div>
 
-      <dl class="mt-10 grid max-w-lg grid-cols-3 gap-4 border-t border-stone-200 pt-6">
+      <dl class="mt-8 grid max-w-lg grid-cols-3 gap-4 border-t border-stone-200 pt-5">
         <div>
           <dt class="text-xs font-medium text-stone-500">Lembaga</dt>
           <dd class="mt-1 text-sm font-bold text-stone-900">MI dan MTs</dd>
@@ -97,24 +97,37 @@
 
     <div class="relative">
       {#if heroImage}
-        <div class="aspect-[4/5] overflow-hidden rounded-[2rem] bg-stone-100">
+        <div class="aspect-[4/3] overflow-hidden rounded-[2rem] bg-stone-100 lg:aspect-[5/4]">
           <img
             src={heroImage}
             alt="Kegiatan santri Pondok Pesantren Nurul Husna"
             width="900"
-            height="1125"
+            height="720"
             fetchpriority="high"
             class="h-full w-full object-cover"
           />
         </div>
       {:else}
-        <div class="arch-pattern flex aspect-[4/5] flex-col items-center justify-center rounded-[2rem] bg-brand-900 px-6 text-center">
-          <span class="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/10 text-2xl font-extrabold text-white">
-            NH
-          </span>
-          <p class="mt-4 max-w-[14rem] text-sm leading-relaxed font-medium text-brand-100">
-            Foto kegiatan pondok segera hadir.
-          </p>
+        <div class="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[2rem] bg-brand-900 lg:aspect-[5/4]">
+          <div class="arch-pattern absolute inset-0"></div>
+          <div class="relative flex flex-col items-center px-8 text-center">
+            <span class="flex h-20 w-20 items-center justify-center rounded-full bg-white p-2">
+              <img
+                src="/logo-nurul-husna.png"
+                alt=""
+                width="64"
+                height="64"
+                class="h-full w-full object-contain"
+              />
+            </span>
+            <p class="mt-4 text-base font-bold text-white">Pondok Pesantren Nurul Husna</p>
+            <p class="mt-1 max-w-xs text-sm text-brand-100">
+              MI Nurul Chusna, MTs. Nurul Chusna, dan program mondok.
+            </p>
+            <p class="mt-4 text-[11px] font-medium tracking-wide text-brand-300 uppercase">
+              Foto kegiatan segera hadir
+            </p>
+          </div>
         </div>
       {/if}
     </div>
@@ -122,7 +135,7 @@
 </section>
 
 <section class="border-y border-stone-100 bg-stone-50">
-  <div class="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:grid-cols-2 lg:grid-cols-5">
+  <div class="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:grid-cols-2 lg:grid-cols-5">
     {#each features as feature (feature.title)}
       <div class="flex items-start gap-3">
         <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
@@ -138,9 +151,9 @@
 </section>
 
 <section class="bg-white">
-  <div class="mx-auto max-w-7xl px-4 py-16">
-    <div class="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
-      <div>
+  <div class="mx-auto max-w-7xl px-4 py-14">
+    <div class="flex flex-wrap items-end justify-between gap-5">
+      <div class="max-w-2xl">
         <p class="text-sm font-bold tracking-wide text-brand-700 uppercase">Pilihan pendidikan</p>
         <h2 class="mt-3 text-3xl font-extrabold tracking-tight text-stone-900 sm:text-4xl">
           Mulai dari jenjang yang sesuai
@@ -148,42 +161,42 @@
         <p class="mt-3 text-stone-600">
           Empat kategori pendaftaran, masing-masing dengan biaya dan lembaga yang berbeda.
         </p>
-        <a
-          href="/program"
-          class="mt-6 inline-flex min-h-11 items-center rounded-full border border-stone-300 px-6 text-sm font-bold text-stone-800 hover:border-brand-300 hover:bg-brand-50"
-        >
-          Selengkapnya tentang program
-        </a>
       </div>
+      <a
+        href="/program"
+        class="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-6 text-sm font-bold text-stone-800 hover:border-brand-300 hover:bg-brand-50"
+      >
+        Selengkapnya tentang program
+      </a>
+    </div>
 
-      <div class="grid gap-4 sm:grid-cols-2">
-        {#each data.categories as category (category.code)}
-          <a
-            href="/ppdb/daftar?kategori={category.code}"
-            class="group overflow-hidden rounded-2xl bg-white ring-1 ring-stone-200 transition hover:-translate-y-0.5 hover:ring-brand-300"
-          >
-            <div class="arch-pattern relative flex aspect-[16/9] items-center justify-center bg-brand-800">
-              <span class="text-3xl font-extrabold tracking-tight text-white/90">{category.code}</span>
-            </div>
-            <div class="p-5">
-              <p class="text-xs font-semibold text-brand-700">{category.institutionName}</p>
-              <h3 class="mt-1 text-lg font-bold text-stone-900">{category.name}</h3>
-              <p class="mt-1 text-sm text-stone-500">
-                {category.gradeRange ? `Kelas ${category.gradeRange}` : "Tanpa sekolah formal"}
-              </p>
-              <span class="mt-3 inline-block text-sm font-bold text-brand-700 group-hover:text-brand-900">
-                Lihat biaya dan daftar
-              </span>
-            </div>
-          </a>
-        {/each}
-      </div>
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {#each data.categories as category (category.code)}
+        <a
+          href="/ppdb/daftar?kategori={category.code}"
+          class="group flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-stone-200 transition hover:-translate-y-0.5 hover:ring-brand-300"
+        >
+          <div class="arch-pattern flex h-24 items-center justify-center bg-brand-800">
+            <span class="text-2xl font-extrabold tracking-tight text-white/90">{category.code}</span>
+          </div>
+          <div class="flex flex-1 flex-col p-4">
+            <p class="text-[11px] font-semibold text-brand-700">{category.institutionName}</p>
+            <h3 class="mt-1 text-base font-bold text-stone-900">{category.name}</h3>
+            <p class="mt-1 text-xs text-stone-500">
+              {category.gradeRange ? `Kelas ${category.gradeRange}` : "Tanpa sekolah formal"}
+            </p>
+            <span class="mt-auto pt-3 text-sm font-bold text-brand-700 group-hover:text-brand-900">
+              Lihat biaya dan daftar
+            </span>
+          </div>
+        </a>
+      {/each}
     </div>
   </div>
 </section>
 
 <section class="bg-brand-50">
-  <div class="mx-auto grid max-w-7xl gap-10 px-4 py-16 lg:grid-cols-2 lg:items-center">
+  <div class="mx-auto grid max-w-7xl gap-10 px-4 py-14 lg:grid-cols-2 lg:items-center">
     <div class="order-2 lg:order-1">
       {#if aboutImage}
         <div class="aspect-[4/3] overflow-hidden rounded-[2rem] bg-stone-100">
@@ -197,11 +210,24 @@
           />
         </div>
       {:else}
-        <div class="arch-pattern flex aspect-[4/3] flex-col items-center justify-center rounded-[2rem] bg-brand-800 px-6 text-center">
-          <span class="text-4xl font-extrabold text-white/90">NH</span>
-          <p class="mt-2 max-w-[16rem] text-sm font-medium text-brand-100">
-            Dokumentasi pondok segera hadir.
-          </p>
+        <div class="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[2rem] bg-brand-800">
+          <div class="arch-pattern absolute inset-0"></div>
+          <div class="relative flex flex-col items-center px-8 text-center">
+            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-white p-1.5">
+              <img
+                src="/logo-nurul-husna.png"
+                alt=""
+                width="52"
+                height="52"
+                class="h-full w-full object-contain"
+              />
+            </span>
+            <p class="mt-3 text-sm font-bold text-white">Nurul Husna</p>
+            <p class="mt-1 text-xs text-brand-100">Selomerto, Wonosobo</p>
+            <p class="mt-3 text-[11px] font-medium tracking-wide text-brand-300 uppercase">
+              Dokumentasi segera hadir
+            </p>
+          </div>
         </div>
       {/if}
     </div>
@@ -229,13 +255,13 @@
 </section>
 
 <section class="bg-white">
-  <div class="mx-auto max-w-7xl px-4 py-16">
+  <div class="mx-auto max-w-7xl px-4 py-14">
     <p class="text-sm font-bold tracking-wide text-brand-700 uppercase">Alur pendaftaran</p>
     <h2 class="mt-3 text-3xl font-extrabold tracking-tight text-stone-900 sm:text-4xl">
       Empat langkah menuju asrama
     </h2>
 
-    <ol class="mt-8 grid gap-4 lg:grid-cols-4">
+    <ol class="mt-7 grid gap-4 lg:grid-cols-4">
       {#each steps as step, index (step.title)}
         <li class="rounded-2xl bg-stone-50 p-5 ring-1 ring-stone-100">
           <div class="flex items-center gap-3">
@@ -254,18 +280,22 @@
   </div>
 </section>
 
-{#if data.posts.length > 0}
-  <section class="border-t border-stone-100 bg-white">
-    <div class="mx-auto max-w-7xl px-4 py-16">
-      <div class="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p class="text-sm font-bold tracking-wide text-brand-700 uppercase">Kabar pondok</p>
-          <h2 class="mt-2 text-3xl font-extrabold tracking-tight text-stone-900">Berita terbaru</h2>
-        </div>
-        <a href="/berita" class="text-sm font-bold text-brand-700 hover:text-brand-900">Semua berita</a>
+<section class="border-t border-stone-100 bg-white">
+  <div class="mx-auto max-w-7xl px-4 py-12">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="text-sm font-bold tracking-wide text-brand-700 uppercase">Kabar pondok</p>
+        <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-stone-900 sm:text-3xl">
+          Berita terbaru
+        </h2>
       </div>
+      {#if data.posts.length > 0}
+        <a href="/berita" class="text-sm font-bold text-brand-700 hover:text-brand-900">Semua berita</a>
+      {/if}
+    </div>
 
-      <div class="mt-8 grid gap-5 sm:grid-cols-3">
+    {#if data.posts.length > 0}
+      <div class="mt-6 grid gap-5 sm:grid-cols-3">
         {#each data.posts as post (post.slug)}
           <a href="/berita/{post.slug}" class="group rounded-2xl bg-stone-50 p-5 ring-1 ring-stone-100 hover:ring-brand-200">
             <time class="text-xs font-medium text-stone-500" datetime={post.publishedAt?.toISOString()}>
@@ -280,25 +310,20 @@
           </a>
         {/each}
       </div>
-    </div>
-  </section>
-{:else}
-  <section class="border-t border-stone-100 bg-white">
-    <div class="mx-auto max-w-7xl px-4 py-12">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p class="text-sm font-bold tracking-wide text-brand-700 uppercase">Kabar pondok</p>
-          <h2 class="mt-2 text-2xl font-extrabold tracking-tight text-stone-900">Berita terbaru</h2>
-        </div>
+    {:else}
+      <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-5 py-4">
         <p class="text-sm text-stone-600">Belum ada berita yang diterbitkan.</p>
+        <a href="/kontak" class="text-sm font-bold text-brand-700 hover:text-brand-900">
+          Hubungi pengurus
+        </a>
       </div>
-    </div>
-  </section>
-{/if}
+    {/if}
+  </div>
+</section>
 
 {#if data.gallery.length > 0}
   <section class="bg-stone-50">
-    <div class="mx-auto max-w-7xl px-4 py-16">
+    <div class="mx-auto max-w-7xl px-4 py-14">
       <div class="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p class="text-sm font-bold tracking-wide text-brand-700 uppercase">Galeri</p>
@@ -316,7 +341,6 @@
                 alt={item.title ?? "Foto kegiatan pondok"}
                 width="800"
                 height="600"
-                loading="lazy"
                 class="h-full w-full object-cover"
               />
             </div>
