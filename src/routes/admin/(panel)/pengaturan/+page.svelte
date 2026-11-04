@@ -77,6 +77,48 @@
   </section>
 
   <section class="rounded-xl bg-white p-5 ring-1 ring-stone-200">
+    <h2 class="font-semibold text-stone-900">Media Sosial</h2>
+    <p class="mt-1 text-sm text-stone-500">
+      Kosongkan jika belum ada. Ikon muncul di footer setelah URL diisi.
+    </p>
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      <label class="block">
+        <span class="mb-1 block text-sm font-medium text-stone-700">Facebook</span>
+        <input name="social_facebook" type="url" value={data.settings.social_facebook ?? ""} placeholder="https://facebook.com/..." class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+      </label>
+      <label class="block">
+        <span class="mb-1 block text-sm font-medium text-stone-700">Instagram</span>
+        <input name="social_instagram" type="url" value={data.settings.social_instagram ?? ""} placeholder="https://instagram.com/..." class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+      </label>
+      <label class="block">
+        <span class="mb-1 block text-sm font-medium text-stone-700">YouTube</span>
+        <input name="social_youtube" type="url" value={data.settings.social_youtube ?? ""} placeholder="https://youtube.com/@..." class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+      </label>
+      <label class="block">
+        <span class="mb-1 block text-sm font-medium text-stone-700">TikTok</span>
+        <input name="social_tiktok" type="url" value={data.settings.social_tiktok ?? ""} placeholder="https://tiktok.com/@..." class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+      </label>
+    </div>
+  </section>
+
+  <section class="rounded-xl bg-white p-5 ring-1 ring-stone-200">
+    <h2 class="font-semibold text-stone-900">Lokasi Peta</h2>
+    <p class="mt-1 text-sm text-stone-500">
+      Koordinat dipakai untuk peta di halaman kontak dan footer.
+    </p>
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      <label class="block">
+        <span class="mb-1 block text-sm font-medium text-stone-700">Latitude</span>
+        <input name="maps_latitude" type="number" step="any" value={data.settings.maps_latitude ?? ""} placeholder="-7.4147529" class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+      </label>
+      <label class="block">
+        <span class="mb-1 block text-sm font-medium text-stone-700">Longitude</span>
+        <input name="maps_longitude" type="number" step="any" value={data.settings.maps_longitude ?? ""} placeholder="109.8903904" class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+      </label>
+    </div>
+  </section>
+
+  <section class="rounded-xl bg-white p-5 ring-1 ring-stone-200">
     <h2 class="font-semibold text-stone-900">Mode Pengembangan</h2>
     <p class="mt-1 text-sm text-stone-500">
       Untuk uji coba sebelum jadwal gelombang dimulai.

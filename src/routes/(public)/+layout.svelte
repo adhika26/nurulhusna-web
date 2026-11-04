@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { Menu, X, MapPin, Phone, Mail } from "@lucide/svelte";
+  import SocialLinks from "$lib/components/public/SocialLinks.svelte";
   import type { LayoutData } from "./$types";
 
   let { data, children }: { data: LayoutData; children: import("svelte").Snippet } = $props();
@@ -34,10 +35,6 @@
       menuButton?.focus();
     }
   }
-
-  const mapsUrl = $derived(
-    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.site.address)}`
-  );
 </script>
 
 <svelte:window onkeydown={handleEscape} />
@@ -131,7 +128,7 @@
 
   <footer class="px-4 pt-4 pb-6">
     <div class="mx-auto max-w-7xl rounded-[2rem] bg-brand-900 px-6 py-10 text-brand-100 sm:px-10">
-      <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_0.9fr_0.9fr_1.1fr]">
+      <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.55fr_0.85fr_0.85fr_1.25fr] lg:gap-10">
         <div>
           <div class="flex items-center gap-3">
             <span class="flex h-14 w-14 items-center justify-center rounded-full bg-white p-1.5">
@@ -154,39 +151,13 @@
             mondok di Selomerto, Wonosobo.
           </p>
 
-          <div class="mt-5 flex items-center gap-3">
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Lokasi pondok di Google Maps"
-              class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-brand-100 hover:bg-white/20 hover:text-white"
-            >
-              <MapPin class="h-4 w-4" aria-hidden="true" />
-            </a>
-            {#if data.site.phone}
-              <a
-                href="tel:{data.site.phone}"
-                aria-label="Telepon pondok"
-                class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-brand-100 hover:bg-white/20 hover:text-white"
-              >
-                <Phone class="h-4 w-4" aria-hidden="true" />
-              </a>
-            {/if}
-            {#if data.site.email}
-              <a
-                href="mailto:{data.site.email}"
-                aria-label="Email pondok"
-                class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-brand-100 hover:bg-white/20 hover:text-white"
-              >
-                <Mail class="h-4 w-4" aria-hidden="true" />
-              </a>
-            {/if}
+          <div class="mt-5">
+            <SocialLinks links={data.site.socials} />
           </div>
         </div>
 
         <div>
-          <h2 class="text-xs font-bold tracking-wider text-brand-300 uppercase">Quick Links</h2>
+          <h2 class="text-[11px] font-bold tracking-[0.14em] text-brand-300 uppercase">Quick Links</h2>
           <ul class="mt-4 space-y-2.5 text-sm">
             {#each quickLinks as item (item.href)}
               <li>
@@ -197,7 +168,7 @@
         </div>
 
         <div>
-          <h2 class="text-xs font-bold tracking-wider text-brand-300 uppercase">Pendaftaran</h2>
+          <h2 class="text-[11px] font-bold tracking-[0.14em] text-brand-300 uppercase">Pendaftaran</h2>
           <ul class="mt-4 space-y-2.5 text-sm">
             <li><a href="/ppdb" class="hover:text-white">Daftar Santri</a></li>
             <li><a href="/ppdb/status" class="hover:text-white">Cek Status</a></li>
@@ -207,7 +178,7 @@
         </div>
 
         <div>
-          <h2 class="text-xs font-bold tracking-wider text-brand-300 uppercase">Kontak</h2>
+          <h2 class="text-[11px] font-bold tracking-[0.14em] text-brand-300 uppercase">Kontak</h2>
           <ul class="mt-4 space-y-3 text-sm">
             <li class="flex items-start gap-2">
               <MapPin class="mt-0.5 h-4 w-4 shrink-0 text-brand-300" aria-hidden="true" />
@@ -225,16 +196,6 @@
                 <a href="mailto:{data.site.email}" class="hover:text-white">{data.site.email}</a>
               </li>
             {/if}
-            <li>
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="font-semibold text-white underline decoration-white/30 underline-offset-4 hover:decoration-white"
-              >
-                Lihat di Google Maps
-              </a>
-            </li>
           </ul>
         </div>
       </div>

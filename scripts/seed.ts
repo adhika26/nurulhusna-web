@@ -55,7 +55,13 @@ const settings = [
   { key: "bank_account_number", value: "" },
   { key: "bank_account_name", value: "" },
   { key: "ppdb_intro", value: "Pendaftaran santri baru tahun ajaran 2026/2027." },
-  { key: "ppdb_force_open", value: "1" }
+  { key: "ppdb_force_open", value: "1" },
+  { key: "social_facebook", value: "" },
+  { key: "social_instagram", value: "" },
+  { key: "social_youtube", value: "" },
+  { key: "social_tiktok", value: "" },
+  { key: "maps_latitude", value: "-7.4147529" },
+  { key: "maps_longitude", value: "109.8903904" }
 ];
 
 const waves = [

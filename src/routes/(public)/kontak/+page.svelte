@@ -1,12 +1,24 @@
 <script lang="ts">
   import PageHeader from "$lib/components/public/PageHeader.svelte";
-  import { MapPin, Phone, Mail } from "@lucide/svelte";
+  import { MapPin, Phone, Mail, ExternalLink } from "@lucide/svelte";
   import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
 
+  const mapsQuery = $derived(
+    data.site.coordinates.latitude && data.site.coordinates.longitude
+      ? `${data.site.coordinates.latitude},${data.site.coordinates.longitude}`
+      : data.site.address
+  );
+
   const mapsUrl = $derived(
-    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.site.address)}`
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
+  );
+
+  const mapsEmbedUrl = $derived(
+    data.site.coordinates.latitude && data.site.coordinates.longitude
+      ? `https://www.google.com/maps?q=${data.site.coordinates.latitude},${data.site.coordinates.longitude}&z=16&output=embed`
+      : `https://www.google.com/maps?q=${encodeURIComponent(data.site.address)}&z=16&output=embed`
   );
 </script>
 
@@ -32,14 +44,6 @@
           <MapPin class="mt-0.5 h-4 w-4 shrink-0 text-brand-700" aria-hidden="true" />
           <span>{data.site.address}</span>
         </p>
-        <a
-          href={mapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="mt-3 inline-block text-sm font-medium text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-900"
-        >
-          Buka di Google Maps
-        </a>
       </div>
 
       <div class="rounded-2xl bg-white p-5 ring-1 ring-stone-200">
@@ -70,6 +74,38 @@
           {@html data.page.html}
         </article>
       {/if}
+    </div>
+  </div>
+</section>
+
+<section class="bg-brand-900">
+  <div class="mx-auto max-w-7xl px-4 py-14">
+    <h2 class="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">Lokasi Kami</h2>
+    <span class="mt-3 block h-1 w-12 rounded-full bg-brand-300" aria-hidden="true"></span>
+
+    <div class="relative mt-6 overflow-hidden rounded-2xl bg-white ring-1 ring-white/10">
+      <a
+        href={mapsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="absolute top-4 left-4 z-10 inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-brand-800 shadow-sm hover:bg-brand-50"
+      >
+        Buka di Maps
+        <ExternalLink class="h-4 w-4" aria-hidden="true" />
+      </a>
+      <div class="absolute top-4 right-4 z-10 hidden max-w-[260px] rounded-xl bg-white/95 px-4 py-3 shadow-sm ring-1 ring-black/5 sm:block">
+        <p class="text-sm font-bold text-stone-900">{data.site.name}</p>
+        <p class="mt-0.5 text-xs leading-relaxed text-stone-600">{data.site.address}</p>
+      </div>
+      <iframe
+        src={mapsEmbedUrl}
+        title="Lokasi Pondok Pesantren Nurul Husna"
+        width="1200"
+        height="500"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        class="h-[320px] w-full sm:h-[440px]"
+      ></iframe>
     </div>
   </div>
 </section>

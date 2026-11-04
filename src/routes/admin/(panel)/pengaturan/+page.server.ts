@@ -12,7 +12,13 @@ const editableKeys = [
   "bank_name",
   "bank_account_number",
   "bank_account_name",
-  "ppdb_intro"
+  "ppdb_intro",
+  "social_facebook",
+  "social_instagram",
+  "social_youtube",
+  "social_tiktok",
+  "maps_latitude",
+  "maps_longitude"
 ];
 
 export const load: PageServerLoad = async () => {
@@ -37,6 +43,23 @@ export const actions: Actions = {
 
     if (entries.site_email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(entries.site_email)) {
       return fail(400, { message: "Format email tidak valid." });
+    }
+
+    for (const key of ["social_facebook", "social_instagram", "social_youtube", "social_tiktok"]) {
+      if (entries[key] && !/^https?:\/\//i.test(entries[key])) {
+        return fail(400, { message: "URL media sosial harus diawali http:// atau https://" });
+      }
+    }
+
+    for (const [key, label, min, max] of [
+      ["maps_latitude", "Latitude", -90, 90],
+      ["maps_longitude", "Longitude", -180, 180]
+    ] as const) {
+      if (!entries[key]) continue;
+      const value = Number(entries[key]);
+      if (!Number.isFinite(value) || value < min || value > max) {
+        return fail(400, { message: `${label} tidak valid.` });
+      }
     }
 
     await setSettings(entries);

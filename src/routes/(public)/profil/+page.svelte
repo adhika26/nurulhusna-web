@@ -3,10 +3,6 @@
   import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
-
-  const mapsUrl = $derived(
-    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.site.address)}`
-  );
 </script>
 
 <svelte:head>
@@ -42,14 +38,6 @@
       <div class="rounded-2xl bg-white p-5 ring-1 ring-stone-200">
         <h2 class="font-serif text-lg font-semibold text-stone-900">Alamat</h2>
         <p class="mt-2 text-sm leading-relaxed text-stone-600">{data.site.address}</p>
-        <a
-          href={mapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="mt-3 inline-block text-sm font-medium text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-900"
-        >
-          Buka di Google Maps
-        </a>
       </div>
 
       <div class="rounded-2xl bg-white p-5 ring-1 ring-stone-200">
