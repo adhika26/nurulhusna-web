@@ -1,5 +1,15 @@
 <script lang="ts">
-  import { CheckCircle2, ExternalLink, Phone, Save, UserCheck, Wallet, XCircle } from "@lucide/svelte";
+  import {
+    CheckCircle2,
+    ExternalLink,
+    FileCheck2,
+    GraduationCap,
+    Phone,
+    Save,
+    UserCheck,
+    Wallet,
+    XCircle
+  } from "@lucide/svelte";
   import { CHECKLIST_ITEMS, DOCUMENT_ITEMS } from "$lib/types/registration";
   import { formatDate, formatDateTime, formatRupiah } from "$lib/utils/format";
   import type { ActionData, PageData } from "./$types";
@@ -15,6 +25,11 @@
 
   const checkedKeys = $derived(
     new Set(data.checklist.filter((item) => item.isChecked).map((item) => item.itemKey))
+  );
+
+  const requiredItems = $derived(CHECKLIST_ITEMS.filter((item) => item.required));
+  const requiredChecked = $derived(
+    requiredItems.filter((item) => checkedKeys.has(item.key)).length
   );
 
   const uploadedDocuments = $derived(
@@ -33,7 +48,19 @@
     data.installments.filter((item) => item.status === "unpaid")
   );
 
+  const firstInstallmentPaid = $derived(
+    data.installments.find((item) => item.sequence === 1)?.status === "paid"
+  );
+
+  const feeGroups = $derived(
+    [
+      { label: "Pondok", items: data.invoiceItems.filter((item) => item.scope === "pondok") },
+      { label: "Sekolah", items: data.invoiceItems.filter((item) => item.scope === "sekolah") }
+    ].filter((group) => group.items.length > 0)
+  );
+
   let showReject = $state(false);
+  let showRevision = $state(false);
   let selectedInstallment = $state("");
   let cashAmount = $state(0);
 
@@ -54,6 +81,9 @@
     accepted: "Diterima",
     rejected: "Ditolak",
     checked_in: "Check-in",
+    documents_complete: "Berkas lengkap",
+    enrolled: "Santri aktif",
+    needs_revision: "Perlu revisi",
     draft: "Draft"
   };
 
@@ -140,57 +170,138 @@
 
 <section class="mt-5 rounded-xl bg-white p-4 ring-1 ring-stone-200">
   <div class="flex flex-wrap items-center gap-2">
-    {#if reg.status === "submitted"}
-      <form method="POST" action="?/status">
-        <input type="hidden" name="status" value="verified" />
-        <button class="inline-flex items-center gap-1.5 rounded-lg bg-stone-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-stone-900">
-          <CheckCircle2 class="h-3.5 w-3.5" /> Verifikasi data
-        </button>
-      </form>
-    {/if}
-
-    {#if reg.status === "submitted" || reg.status === "verified"}
-      <form method="POST" action="?/status">
-        <input type="hidden" name="status" value="accepted" />
-        <button class="inline-flex items-center gap-1.5 rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-800">
-          <UserCheck class="h-3.5 w-3.5" /> Terima santri
-        </button>
-      </form>
-    {/if}
-
-    {#if reg.status === "accepted"}
-      <form method="POST" action="?/status">
-        <input type="hidden" name="status" value="checked_in" />
-        <button class="inline-flex items-center gap-1.5 rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-800">
-          <CheckCircle2 class="h-3.5 w-3.5" /> Check-in asrama
-        </button>
-      </form>
-    {/if}
-
-    {#if reg.status !== "rejected"}
-      {#if showReject}
-        <form method="POST" action="?/status" class="flex flex-wrap items-center gap-2">
-          <input type="hidden" name="status" value="rejected" />
-          <input name="reason" placeholder="Alasan penolakan" required class="rounded-lg border border-stone-300 px-3 py-1.5 text-xs" />
-          <button class="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">Tolak</button>
-          <button type="button" onclick={() => (showReject = false)} class="text-xs text-stone-500 hover:underline">Batal</button>
+    {#if data.permissions.registration}
+      {#if reg.status === "submitted" || reg.status === "verified"}
+        <form method="POST" action="?/status">
+          <input type="hidden" name="status" value="accepted" />
+          <button class="inline-flex items-center gap-1.5 rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-800">
+            <UserCheck class="h-3.5 w-3.5" /> Terima santri
+          </button>
         </form>
-      {:else}
-        <button
-          type="button"
-          onclick={() => (showReject = true)}
-          class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-        >
-          <XCircle class="h-3.5 w-3.5" /> Tolak
-        </button>
       {/if}
+
+      {#if reg.status === "accepted"}
+        <form method="POST" action="?/status">
+          <input type="hidden" name="status" value="checked_in" />
+          <button class="inline-flex items-center gap-1.5 rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-800">
+            <CheckCircle2 class="h-3.5 w-3.5" /> Check-in asrama
+          </button>
+        </form>
+      {/if}
+
+      {#if reg.status === "checked_in"}
+        <form method="POST" action="?/status">
+          <input type="hidden" name="status" value="documents_complete" />
+          <button
+            disabled={requiredChecked < requiredItems.length}
+            title={requiredChecked < requiredItems.length
+              ? `Masih ada ${requiredItems.length - requiredChecked} berkas wajib yang belum dicentang.`
+              : undefined}
+            class="inline-flex items-center gap-1.5 rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <FileCheck2 class="h-3.5 w-3.5" /> Berkas lengkap
+          </button>
+        </form>
+        {#if requiredChecked < requiredItems.length}
+          <span class="text-xs text-amber-600">
+            Lengkapi {requiredItems.length - requiredChecked} berkas wajib dulu.
+          </span>
+        {/if}
+      {/if}
+
+      {#if reg.status === "submitted" || reg.status === "verified"}
+        {#if showRevision}
+          <form method="POST" action="?/status" class="flex flex-wrap items-center gap-2">
+            <input type="hidden" name="status" value="needs_revision" />
+            <input name="reason" placeholder="Bagian yang perlu diperbaiki" required class="rounded-lg border border-stone-300 px-3 py-1.5 text-xs" />
+            <button class="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700">
+              Minta revisi
+            </button>
+            <button type="button" onclick={() => (showRevision = false)} class="text-xs text-stone-500 hover:underline">Batal</button>
+          </form>
+        {:else}
+          <button
+            type="button"
+            onclick={() => (showRevision = true)}
+            class="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-50"
+          >
+            Minta revisi
+          </button>
+        {/if}
+      {/if}
+
+      {#if reg.status !== "rejected" && reg.status !== "enrolled"}
+        {#if showReject}
+          <form method="POST" action="?/status" class="flex flex-wrap items-center gap-2">
+            <input type="hidden" name="status" value="rejected" />
+            <input name="reason" placeholder="Alasan penolakan" required class="rounded-lg border border-stone-300 px-3 py-1.5 text-xs" />
+            <button class="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">Tolak</button>
+            <button type="button" onclick={() => (showReject = false)} class="text-xs text-stone-500 hover:underline">Batal</button>
+          </form>
+        {:else}
+          <button
+            type="button"
+            onclick={() => (showReject = true)}
+            class="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+          >
+            <XCircle class="h-3.5 w-3.5" /> Tolak
+          </button>
+        {/if}
+      {/if}
+    {:else}
+      <p class="text-xs text-stone-500">Hanya staff pendaftaran yang dapat mengubah status.</p>
+    {/if}
+
+    {#if data.santri}
+      <a
+        href="/admin/santri/{data.santri.id}"
+        class="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-800 hover:bg-brand-100"
+      >
+        <GraduationCap class="h-3.5 w-3.5" /> Lihat data santri
+      </a>
     {/if}
 
     <span class="ml-auto text-xs text-stone-400">Didaftarkan {formatDateTime(reg.createdAt)}</span>
   </div>
 
+  {#if reg.documentsVerifiedAt}
+    <p class="mt-3 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800">
+      Berkas lengkap diverifikasi {formatDateTime(reg.documentsVerifiedAt)}.
+    </p>
+  {/if}
+
+  {#if !data.santri && reg.status !== "rejected"}
+    <div class="mt-3 rounded-lg bg-stone-50 px-3 py-2 text-xs text-stone-600">
+      <p class="font-medium text-stone-700">Syarat menjadi santri</p>
+      <ul class="mt-1 space-y-1">
+        <li>{firstInstallmentPaid ? "✓" : "○"} Cicilan pertama sudah terverifikasi</li>
+        <li>{reg.documentsVerifiedAt ? "✓" : "○"} Berkas sudah lengkap</li>
+      </ul>
+      <p class="mt-1 text-stone-500">
+        Data santri dibuat otomatis oleh sistem setelah kedua syarat terpenuhi.
+      </p>
+    </div>
+  {/if}
+
   {#if reg.status === "rejected" && reg.rejectionReason}
     <p class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">Alasan: {reg.rejectionReason}</p>
+  {/if}
+
+  {#if reg.status === "needs_revision" && reg.revisionNote}
+    <p class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+      Catatan revisi: {reg.revisionNote}
+    </p>
+  {/if}
+
+  {#if reg.status === "rejected" && data.canReopen}
+    <form method="POST" action="?/reopen" class="mt-3">
+      <button
+        type="submit"
+        class="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50"
+      >
+        Buka kembali pendaftaran
+      </button>
+    </form>
   {/if}
 </section>
 
@@ -257,20 +368,59 @@
 </section>
 
 <section class="mt-4 rounded-xl bg-white p-5 ring-1 ring-stone-200">
-  <h2 class="font-semibold text-stone-900">Kelengkapan berkas fisik</h2>
-  <div class="mt-3 grid gap-2 sm:grid-cols-2">
-    {#each CHECKLIST_ITEMS as item (item.key)}
-      <div class="flex items-center gap-2 text-sm">
-        {#if checkedKeys.has(item.key)}
-          <CheckCircle2 class="h-4 w-4 text-brand-600" />
-          <span class="text-stone-800">{item.label}</span>
-        {:else}
-          <span class="h-4 w-4 rounded-full border border-stone-300"></span>
-          <span class="text-stone-400">{item.label}</span>
-        {/if}
-      </div>
-    {/each}
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <h2 class="font-semibold text-stone-900">Kelengkapan berkas fisik</h2>
+    <span class="text-xs text-stone-500">
+      {requiredChecked}/{requiredItems.length} berkas wajib
+    </span>
   </div>
+  <p class="mt-1 text-xs text-stone-500">
+    Centang setelah berkas fisik diterima. Status berkas lengkap hanya bisa diset jika semua berkas wajib tercentang.
+  </p>
+
+  {#if data.permissions.registration}
+    <form method="POST" action="?/checklist" class="mt-3">
+      <div class="grid gap-2 sm:grid-cols-2">
+        {#each CHECKLIST_ITEMS as item (item.key)}
+          <label class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-stone-50">
+            <input
+              type="checkbox"
+              name="items"
+              value={item.key}
+              checked={checkedKeys.has(item.key)}
+              class="rounded"
+            />
+            <span class={checkedKeys.has(item.key) ? "text-stone-800" : "text-stone-500"}>
+              {item.label}
+              {#if !item.required}
+                <span class="text-xs text-stone-400">(bila ada)</span>
+              {/if}
+            </span>
+          </label>
+        {/each}
+      </div>
+      <button
+        type="submit"
+        class="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-stone-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-stone-900"
+      >
+        <Save class="h-3.5 w-3.5" /> Simpan kelengkapan
+      </button>
+    </form>
+  {:else}
+    <div class="mt-3 grid gap-2 sm:grid-cols-2">
+      {#each CHECKLIST_ITEMS as item (item.key)}
+        <div class="flex items-center gap-2 text-sm">
+          {#if checkedKeys.has(item.key)}
+            <CheckCircle2 class="h-4 w-4 text-brand-600" />
+            <span class="text-stone-800">{item.label}</span>
+          {:else}
+            <span class="h-4 w-4 rounded-full border border-stone-300"></span>
+            <span class="text-stone-400">{item.label}</span>
+          {/if}
+        </div>
+      {/each}
+    </div>
+  {/if}
 </section>
 
 <section class="mt-4 rounded-xl bg-white p-5 ring-1 ring-stone-200">
@@ -319,6 +469,29 @@
       </div>
     </div>
 
+    {#if feeGroups.length > 0}
+      <div class="mt-4 space-y-3 border-t border-stone-100 pt-4">
+        {#each feeGroups as group (group.label)}
+          <div>
+            <h3 class="text-xs font-semibold uppercase tracking-wide text-stone-500">{group.label}</h3>
+            <div class="mt-1 divide-y divide-stone-100">
+              {#each group.items as item (item.id)}
+                <div class="flex items-center justify-between gap-2 py-1.5 text-sm">
+                  <span class="text-stone-700">
+                    {item.name}
+                    {#if item.isRecurring}
+                      <span class="ml-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">bulanan</span>
+                    {/if}
+                  </span>
+                  <span class="font-medium text-stone-900">{formatRupiah(item.amount)}</span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+
     <div class="mt-4 divide-y divide-stone-100">
       {#each data.installments as installment (installment.id)}
         <div class="flex items-center justify-between gap-2 py-2 text-sm">
@@ -362,7 +535,7 @@
       </div>
     {/if}
 
-    {#if remaining > 0}
+    {#if remaining > 0 && data.permissions.payment}
       <form method="POST" action="?/cash" class="mt-4 grid gap-3 border-t border-stone-100 pt-4 sm:grid-cols-4 sm:items-end">
         <input type="hidden" name="invoiceId" value={data.invoice.id} />
         <label class="block sm:col-span-2">
@@ -378,7 +551,7 @@
         </label>
         <label class="block">
           <span class="mb-1 block text-xs font-medium text-stone-500">Nominal (Rp)</span>
-          <input name="amount" type="number" min="1" step="1000" bind:value={cashAmount} required class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+          <input name="amount" type="number" min="1" step="1" bind:value={cashAmount} required class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
         </label>
         <button type="submit" class="rounded-lg bg-stone-800 px-3 py-2 text-sm font-semibold text-white hover:bg-stone-900">
           Catat tunai
@@ -397,12 +570,16 @@
 
 <section class="mt-4 rounded-xl bg-white p-5 ring-1 ring-stone-200">
   <h2 class="font-semibold text-stone-900">Catatan pengurus</h2>
-  <form method="POST" action="?/notes" class="mt-3">
-    <textarea name="notes" rows="3" class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm">{reg.notes ?? ""}</textarea>
-    <button type="submit" class="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-stone-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-stone-900">
-      <Save class="h-3.5 w-3.5" /> Simpan catatan
-    </button>
-  </form>
+  {#if data.permissions.registration}
+    <form method="POST" action="?/notes" class="mt-3">
+      <textarea name="notes" rows="3" class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm">{reg.notes ?? ""}</textarea>
+      <button type="submit" class="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-stone-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-stone-900">
+        <Save class="h-3.5 w-3.5" /> Simpan catatan
+      </button>
+    </form>
+  {:else}
+    <p class="mt-2 whitespace-pre-line text-sm text-stone-600">{reg.notes || "-"}</p>
+  {/if}
 </section>
 
 {#if reg.phone}

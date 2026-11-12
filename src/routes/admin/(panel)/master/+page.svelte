@@ -5,7 +5,7 @@
     {
       href: "/admin/master/kategori",
       label: "Kategori Santri",
-      description: "Empat kategori pendaftaran, nama lembaga, dan urutan tampil.",
+      description: "Kategori pendaftaran, nama lembaga, dan urutan tampil.",
       icon: Tags
     },
     {
@@ -17,7 +17,7 @@
     {
       href: "/admin/master/biaya",
       label: "Paket Biaya",
-      description: "Rincian biaya pondok per kategori dan gelombang.",
+      description: "Rincian biaya pondok dan sekolah per kategori dan gelombang.",
       icon: Wallet
     }
   ];

@@ -37,7 +37,7 @@
       </label>
 
       <label class="block">
-        <span class="mb-1 block text-sm font-medium text-stone-700">NISN <span class="text-red-500">*</span></span>
+        <span class="mb-1 block text-sm font-medium text-stone-700">NISN <span class="text-stone-400">(opsional)</span></span>
         <input bind:value={draft.student.nisn} maxlength="10" inputmode="numeric" class={inputClass} />
         <span class="mt-1 block text-xs text-stone-400">Nomor Induk Siswa Nasional, 10 digit.</span>
       </label>

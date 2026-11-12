@@ -3,7 +3,14 @@ import { registrationPayloadSchema } from "$lib/server/ppdb/schema";
 import { createRegistration } from "$lib/server/ppdb/registration.service";
 import type { RequestHandler } from "./$types";
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+  if (!locals.ppdbAccount) {
+    return json(
+      { message: "Silakan masuk atau buat akun dengan OTP WhatsApp terlebih dahulu." },
+      { status: 401 }
+    );
+  }
+
   let formData: FormData;
 
   try {
@@ -57,7 +64,8 @@ export const POST: RequestHandler = async ({ request }) => {
       payload: parsed.data,
       photo,
       documents,
-      source: "online"
+      source: "online",
+      accountId: locals.ppdbAccount.id
     });
 
     return json(result, { status: 201 });

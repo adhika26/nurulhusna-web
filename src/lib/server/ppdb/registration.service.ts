@@ -1,8 +1,10 @@
-import { and, eq, sql } from "drizzle-orm";
+import { randomInt } from "node:crypto";
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import { CHECKLIST_ITEMS, DOCUMENT_ITEMS } from "$lib/types/registration";
 import type { RegistrationPayload } from "./schema";
+import { buildInstallmentAmounts } from "./installment";
 import { saveUpload } from "./storage";
 import { getOpenWave } from "./wave.service";
 
@@ -12,6 +14,7 @@ type CreateRegistrationInput = {
   documents?: Array<{ key: string; file: File }>;
   source: "online" | "offline";
   createdBy?: number | null;
+  accountId?: string | null;
 };
 
 function isoDate(date: Date): string {
@@ -24,47 +27,12 @@ function addDays(date: Date, days: number): Date {
   return copy;
 }
 
-function buildInstallmentAmounts(total: number, scheme: "full" | "installment_3") {
-  if (scheme === "full") return [total];
+const CODE_PREFIX = "NH-";
+const CODE_MAX_ATTEMPTS = 5;
 
-  const cents = Math.round(total * 100);
-  const base = Math.floor(cents / 3);
-  return [base / 100, base / 100, (cents - base * 2) / 100];
-}
-
-/** Mengambil nomor urut berikutnya secara atomic per (gelombang, kategori). */
-async function nextSequence(
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  waveId: number,
-  categoryId: number
-): Promise<number> {
-  const rows = await tx.execute(sql`
-    INSERT INTO registration_counter (wave_id, category_id, last_number)
-    VALUES (${waveId}, ${categoryId}, 1)
-    ON CONFLICT (wave_id, category_id)
-    DO UPDATE SET last_number = registration_counter.last_number + 1
-    RETURNING last_number
-  `);
-
-  const first = rows[0] as { last_number: number } | undefined;
-  return Number(first?.last_number ?? 1);
-}
-
-function yearToken(academicYear: string): string {
-  const parts = academicYear.split("/").map((part) => part.trim());
-  if (parts.length === 2 && parts[0].length >= 2 && parts[1].length >= 2) {
-    return `${parts[0].slice(-2)}${parts[1].slice(-2)}`;
-  }
-  return academicYear.replace(/\D/g, "").slice(-4);
-}
-
-function buildCode(
-  academicYear: string,
-  categoryCode: string,
-  waveCode: string,
-  sequence: number
-): string {
-  return `NH-${yearToken(academicYear)}-${categoryCode}-${waveCode}-${String(sequence).padStart(4, "0")}`;
+/** Kode acak enam digit, mis. NH-482913. */
+function generateCode(): string {
+  return `${CODE_PREFIX}${randomInt(100_000, 1_000_000)}`;
 }
 
 export type CreateRegistrationResult = {
@@ -97,6 +65,24 @@ export async function createRegistration(
 
   if (!category) {
     throw new Error("Kategori santri tidak ditemukan atau sudah nonaktif.");
+  }
+
+  const [duplicate] = await db
+    .select({ code: table.registration.code })
+    .from(table.registration)
+    .where(
+      and(
+        eq(table.registration.waveId, wave.id),
+        eq(table.registration.nik, payload.student.nik),
+        ne(table.registration.status, "rejected")
+      )
+    )
+    .limit(1);
+
+  if (duplicate) {
+    throw new Error(
+      `NIK ini sudah terdaftar pada gelombang ini dengan kode ${duplicate.code}.`
+    );
   }
 
   let photoPath: string | null = null;
@@ -140,40 +126,49 @@ export async function createRegistration(
   const hasInvoice = plan !== undefined && totalAmount > 0;
 
   const result = await db.transaction(async (tx) => {
-    const sequence = await nextSequence(tx, wave.id, category.id);
-    const code = buildCode(wave.academicYear, category.code, wave.code || `G${wave.id}`, sequence);
+    const values: Omit<typeof table.registration.$inferInsert, "code"> = {
+      waveId: wave.id,
+      categoryId: category.id,
+      accountId: input.accountId ?? null,
+      source: input.source,
+      status: "submitted",
+      createdBy: input.createdBy ?? null,
+      fullName: payload.student.fullName,
+      gender: payload.student.gender,
+      birthPlace: payload.student.birthPlace,
+      birthDate: payload.student.birthDate,
+      religion: payload.student.religion,
+      nationality: payload.student.nationality,
+      nik: payload.student.nik,
+      kkNumber: payload.student.kkNumber,
+      nisn: payload.student.nisn,
+      localNis: payload.student.localNis,
+      siblingCount: payload.student.siblingCount,
+      birthOrder: payload.student.birthOrder,
+      aspiration: payload.student.aspiration,
+      hobby: payload.student.hobby,
+      phone: payload.student.phone,
+      email: payload.student.email,
+      schoolName: payload.student.schoolName,
+      schoolNpsn: payload.student.schoolNpsn,
+      kipNumber: payload.student.kipNumber,
+      photoPath
+    };
 
-    const [registration] = await tx
-      .insert(table.registration)
-      .values({
-        code,
-        waveId: wave.id,
-        categoryId: category.id,
-        source: input.source,
-        status: "submitted",
-        createdBy: input.createdBy ?? null,
-        fullName: payload.student.fullName,
-        gender: payload.student.gender,
-        birthPlace: payload.student.birthPlace,
-        birthDate: payload.student.birthDate,
-        religion: payload.student.religion,
-        nationality: payload.student.nationality,
-        nik: payload.student.nik,
-        kkNumber: payload.student.kkNumber,
-        nisn: payload.student.nisn,
-        localNis: payload.student.localNis,
-        siblingCount: payload.student.siblingCount,
-        birthOrder: payload.student.birthOrder,
-        aspiration: payload.student.aspiration,
-        hobby: payload.student.hobby,
-        phone: payload.student.phone,
-        email: payload.student.email,
-        schoolName: payload.student.schoolName,
-        schoolNpsn: payload.student.schoolNpsn,
-        kipNumber: payload.student.kipNumber,
-        photoPath
-      })
-      .returning();
+    let registration: typeof table.registration.$inferSelect | null = null;
+
+    for (let attempt = 0; attempt < CODE_MAX_ATTEMPTS && !registration; attempt += 1) {
+      const [created] = await tx
+        .insert(table.registration)
+        .values({ ...values, code: generateCode() })
+        .onConflictDoNothing({ target: table.registration.code })
+        .returning();
+      registration = created ?? null;
+    }
+
+    if (!registration) {
+      throw new Error("Gagal membuat kode pendaftaran unik. Silakan coba lagi.");
+    }
 
     await tx.insert(table.guardian).values([
       {
@@ -268,6 +263,19 @@ export async function createRegistration(
         })
         .returning();
 
+      if (installableItems.length > 0) {
+        await tx.insert(table.invoiceItem).values(
+          installableItems.map((item, index) => ({
+            invoiceId: invoice.id,
+            name: item.name,
+            amount: Number(item.amount),
+            scope: item.scope,
+            isRecurring: item.isRecurring,
+            sortOrder: item.sortOrder || index
+          }))
+        );
+      }
+
       const amounts = buildInstallmentAmounts(totalAmount, payload.scheme);
       const today = new Date();
 
@@ -282,7 +290,7 @@ export async function createRegistration(
       );
     }
 
-    return { id: registration.id, code };
+    return { id: registration.id, code: registration.code };
   });
 
   return { ...result, hasInvoice, totalAmount };

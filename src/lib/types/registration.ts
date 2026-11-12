@@ -66,7 +66,7 @@ export type WaliDraft = {
 
 export type RegistrationDraft = {
   categoryCode: string;
-  scheme: PaymentScheme;
+  scheme: PaymentScheme | "";
   student: StudentDraft;
   father: GuardianDraft;
   mother: GuardianDraft;
@@ -110,16 +110,30 @@ export const OWNERSHIP_OPTIONS = [
 export const RELATIONSHIP_OPTIONS = ["Kakek", "Nenek", "Paman", "Bibi", "Kakak", "Saudara", "Lainnya"];
 
 export const CHECKLIST_ITEMS = [
-  { key: "photo_3x4", label: "Pas foto latar merah 3×4", count: "4 lembar" },
-  { key: "akta", label: "Fotokopi akta kelahiran", count: "2 lembar" },
-  { key: "kk", label: "Fotokopi Kartu Keluarga", count: "2 lembar" },
-  { key: "ktp_parents", label: "Fotokopi KTP kedua orang tua / wali", count: "2 lembar" },
-  { key: "nisn", label: "Fotokopi NISN", count: "2 lembar" },
-  { key: "ijazah", label: "Fotokopi ijazah / SKL (dilegalisir)", count: "2 lembar" },
-  { key: "kip", label: "Fotokopi KIP (bila ada)", count: "2 lembar" },
-  { key: "kks", label: "Fotokopi KKS (bila ada)", count: "2 lembar" },
-  { key: "pkh", label: "Fotokopi PKH (bila ada)", count: "2 lembar" }
+  { key: "photo_3x4", label: "Pas foto latar merah 3×4", count: "4 lembar", required: true },
+  { key: "akta", label: "Fotokopi akta kelahiran", count: "2 lembar", required: true },
+  { key: "kk", label: "Fotokopi Kartu Keluarga", count: "2 lembar", required: true },
+  {
+    key: "ktp_parents",
+    label: "Fotokopi KTP kedua orang tua / wali",
+    count: "2 lembar",
+    required: true
+  },
+  { key: "nisn", label: "Fotokopi NISN", count: "2 lembar", required: true },
+  {
+    key: "ijazah",
+    label: "Fotokopi ijazah / SKL (dilegalisir)",
+    count: "2 lembar",
+    required: true
+  },
+  { key: "kip", label: "Fotokopi KIP (bila ada)", count: "2 lembar", required: false },
+  { key: "kks", label: "Fotokopi KKS (bila ada)", count: "2 lembar", required: false },
+  { key: "pkh", label: "Fotokopi PKH (bila ada)", count: "2 lembar", required: false }
 ];
+
+export const REQUIRED_CHECKLIST_KEYS = CHECKLIST_ITEMS.filter((item) => item.required).map(
+  (item) => item.key
+);
 
 /** Dokumen yang boleh diunggah online. Pas foto ditangani di langkah calon santri. */
 export const DOCUMENT_ITEMS = CHECKLIST_ITEMS.filter((item) => item.key !== "photo_3x4");
@@ -173,7 +187,7 @@ export function emptyAddress(): AddressDraft {
 export function createEmptyDraft(categoryCode: string): RegistrationDraft {
   return {
     categoryCode,
-    scheme: "full",
+    scheme: "",
     student: {
       fullName: "",
       gender: "",

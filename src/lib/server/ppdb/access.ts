@@ -6,13 +6,13 @@ if (!secret) {
   console.warn("[ppdb] APP_SECRET belum diset. Token akses memakai nilai sementara.");
 }
 
-const key = secret ?? "nurulhusna-development-secret";
+export const appSecretKey = secret ?? "nurulhusna-development-secret";
 
 export const accessCookieName = "ppdb-access";
 export const ACCESS_DURATION_MS = 1000 * 60 * 60 * 4;
 
 function sign(payload: string): string {
-  return createHmac("sha256", key).update(payload).digest("base64url");
+  return createHmac("sha256", appSecretKey).update(payload).digest("base64url");
 }
 
 export function createAccessToken(registrationId: string): string {
@@ -45,4 +45,9 @@ export function normalizePhone(value: string | null | undefined): string {
   let digits = value.replace(/\D/g, "");
   if (digits.startsWith("62")) digits = `0${digits.slice(2)}`;
   return digits;
+}
+
+export function toWhatsAppNumber(value: string): string {
+  const phone = normalizePhone(value);
+  return phone.startsWith("0") ? `62${phone.slice(1)}` : phone;
 }

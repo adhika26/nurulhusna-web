@@ -1,10 +1,13 @@
 import { getSettingMap } from "$lib/server/services/setting.service";
 import type { LayoutServerLoad } from "./$types";
 
-export const load: LayoutServerLoad = async () => {
+export const load: LayoutServerLoad = async ({ locals }) => {
   const settings = await getSettingMap();
 
   return {
+    account: locals.ppdbAccount
+      ? { fullName: locals.ppdbAccount.fullName, phone: locals.ppdbAccount.phone }
+      : null,
     site: {
       name: settings.site_name || "Pondok Pesantren Nurul Husna",
       tagline: settings.site_tagline || "",

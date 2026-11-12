@@ -1,12 +1,17 @@
 import { json } from "@sveltejs/kit";
 import { registrationPayloadSchema } from "$lib/server/ppdb/schema";
 import { createRegistration } from "$lib/server/ppdb/registration.service";
+import { canManageRegistration } from "$lib/server/roles";
 import { logAudit } from "$lib/server/services/audit.service";
 import type { RequestHandler } from "./$types";
 
 export const POST: RequestHandler = async ({ request, locals, getClientAddress }) => {
   if (!locals.user) {
     return json({ message: "Tidak diizinkan." }, { status: 401 });
+  }
+
+  if (!canManageRegistration(locals.user.role)) {
+    return json({ message: "Anda tidak berhak menambah pendaftaran." }, { status: 403 });
   }
 
   let formData: FormData;

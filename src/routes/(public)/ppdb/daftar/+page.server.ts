@@ -5,7 +5,12 @@ import * as table from "$lib/server/db/schema";
 import { getOpenWave } from "$lib/server/ppdb/wave.service";
 import type { PageServerLoad } from "./$types";
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
+  if (!locals.ppdbAccount) {
+    const next = `${url.pathname}${url.search}`;
+    redirect(303, `/ppdb/akun/masuk?next=${encodeURIComponent(next)}`);
+  }
+
   const code = (url.searchParams.get("kategori") ?? "").trim().toUpperCase();
 
   if (!code) redirect(303, "/ppdb");
@@ -45,6 +50,7 @@ export const load: PageServerLoad = async ({ url }) => {
     .reduce((sum, item) => sum + Number(item.amount), 0);
 
   return {
+    draftOwner: locals.ppdbAccount?.id ?? "",
     category: {
       code: category.code,
       name: category.name,

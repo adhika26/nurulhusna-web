@@ -1,5 +1,5 @@
 import { error, fail, redirect } from "@sveltejs/kit";
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import { accessCookieName, verifyAccessToken } from "$lib/server/ppdb/access";
@@ -21,8 +21,9 @@ export const load: PageServerLoad = async ({ params, cookies, locals }) => {
   if (!registration) error(404, "Kode pendaftaran tidak ditemukan.");
 
   const accessId = verifyAccessToken(cookies.get(accessCookieName));
+  const isOwner = locals.ppdbAccount && registration.accountId === locals.ppdbAccount.id;
 
-  if (!locals.user && accessId !== registration.id) {
+  if (!locals.user && !isOwner && accessId !== registration.id) {
     redirect(303, `/ppdb/status?kode=${registration.code}`);
   }
 
@@ -54,6 +55,14 @@ export const load: PageServerLoad = async ({ params, cookies, locals }) => {
         .orderBy(asc(table.installment.sequence))
     : [];
 
+  const invoiceItems = invoice
+    ? await db
+        .select()
+        .from(table.invoiceItem)
+        .where(eq(table.invoiceItem.invoiceId, invoice.id))
+        .orderBy(asc(table.invoiceItem.sortOrder), asc(table.invoiceItem.createdAt))
+    : [];
+
   const payments = invoice
     ? await db
         .select()
@@ -69,6 +78,8 @@ export const load: PageServerLoad = async ({ params, cookies, locals }) => {
       fullName: registration.fullName,
       status: registration.status,
       phone: registration.phone,
+      rejectionReason: registration.rejectionReason,
+      revisionNote: registration.revisionNote,
       createdAt: registration.createdAt
     },
     category: category ? { name: category.name, institutionName: category.institutionName } : null,
@@ -82,6 +93,13 @@ export const load: PageServerLoad = async ({ params, cookies, locals }) => {
           status: invoice.status
         }
       : null,
+    invoiceItems: invoiceItems.map((item) => ({
+      id: item.id,
+      name: item.name,
+      amount: Number(item.amount),
+      scope: item.scope,
+      isRecurring: item.isRecurring
+    })),
     installments: installments.map((item) => ({
       id: item.id,
       sequence: item.sequence,
@@ -107,9 +125,22 @@ export const actions: Actions = {
 
     if (!registration) return fail(404, { message: "Pendaftaran tidak ditemukan." });
 
-    const accessId = verifyAccessToken(cookies.get(accessCookieName));
+    if (registration.status === "rejected") {
+      return fail(400, {
+        message: "Pendaftaran sudah ditolak. Pembayaran tidak dapat dikirim."
+      });
+    }
 
-    if (!locals.user && accessId !== registration.id) {
+    if (registration.status === "needs_revision") {
+      return fail(400, {
+        message: "Pendaftaran sedang dalam perbaikan data. Pembayaran belum dapat dikirim."
+      });
+    }
+
+    const accessId = verifyAccessToken(cookies.get(accessCookieName));
+    const isOwner = locals.ppdbAccount && registration.accountId === locals.ppdbAccount.id;
+
+    if (!locals.user && !isOwner && accessId !== registration.id) {
       return fail(403, { message: "Sesi akses sudah berakhir. Silakan cek status ulang." });
     }
 
@@ -137,8 +168,23 @@ export const actions: Actions = {
       return fail(400, { message: "Nominal pembayaran tidak valid." });
     }
 
-    if (amount > Number(invoice.totalAmount) + 0.005) {
-      return fail(400, { message: "Nominal melebihi total tagihan." });
+    const verifiedPayments = await db
+      .select({ amount: table.payment.amount })
+      .from(table.payment)
+      .where(
+        and(
+          eq(table.payment.invoiceId, invoice.id),
+          eq(table.payment.status, "verified")
+        )
+      );
+
+    const paid = verifiedPayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+    const remaining = Number(invoice.totalAmount) - paid;
+
+    if (amount > remaining + 0.005) {
+      return fail(400, {
+        message: `Nominal melebihi sisa tagihan. Sisa tagihan Rp ${remaining.toLocaleString("id-ID")}.`
+      });
     }
 
     if (!(proof instanceof File) || proof.size === 0) {

@@ -21,7 +21,11 @@ import {
 /*                                   Enums                                    */
 /* -------------------------------------------------------------------------- */
 
-export const userRoleEnum = pgEnum("user_role", ["admin", "staff"]);
+export const userRoleEnum = pgEnum("user_role", [
+  "super_admin",
+  "staff_pendaftaran",
+  "staff_keuangan"
+]);
 export const educationLevelEnum = pgEnum("education_level", ["mi", "mts", "none"]);
 export const genderEnum = pgEnum("gender", ["male", "female"]);
 export const registrationSourceEnum = pgEnum("registration_source", ["online", "offline"]);
@@ -31,8 +35,12 @@ export const registrationStatusEnum = pgEnum("registration_status", [
   "verified",
   "accepted",
   "rejected",
-  "checked_in"
+  "checked_in",
+  "documents_complete",
+  "enrolled",
+  "needs_revision"
 ]);
+export const santriStatusEnum = pgEnum("santri_status", ["active", "graduated", "left"]);
 export const guardianTypeEnum = pgEnum("guardian_type", ["father", "mother", "guardian"]);
 export const guardianStatusEnum = pgEnum("guardian_status", ["alive", "deceased", "unknown"]);
 export const addressTypeEnum = pgEnum("address_type", ["father", "mother", "guardian", "student"]);
@@ -66,7 +74,7 @@ export const user = pgTable(
     email: varchar("email", { length: 255 }),
     passwordHash: text("password_hash").notNull(),
     fullName: varchar("full_name", { length: 160 }).notNull(),
-    role: userRoleEnum("role").notNull().default("staff"),
+    role: userRoleEnum("role").notNull().default("staff_pendaftaran"),
     isActive: boolean("is_active").notNull().default(true),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     ...timestamps
@@ -88,6 +96,58 @@ export const session = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
   },
   (table) => [index("session_user_id_idx").on(table.userId)]
+);
+
+/* -------------------------------------------------------------------------- */
+/*                            Akun wali & OTP WA                              */
+/* -------------------------------------------------------------------------- */
+
+export const ppdbAccount = pgTable(
+  "ppdb_account",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    phone: varchar("phone", { length: 20 }).notNull(),
+    fullName: varchar("full_name", { length: 160 }).notNull(),
+    email: varchar("email", { length: 255 }),
+    phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
+    isActive: boolean("is_active").notNull().default(true),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    ...timestamps
+  },
+  (table) => [uniqueIndex("ppdb_account_phone_idx").on(table.phone)]
+);
+
+export const ppdbAccountSession = pgTable(
+  "ppdb_account_session",
+  {
+    id: text("id").primaryKey(),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => ppdbAccount.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [index("ppdb_account_session_account_idx").on(table.accountId)]
+);
+
+export const ppdbOtp = pgTable(
+  "ppdb_otp",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    phone: varchar("phone", { length: 20 }).notNull(),
+    fullName: varchar("full_name", { length: 160 }),
+    purpose: varchar("purpose", { length: 20 }).notNull().default("auth"),
+    codeHash: text("code_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    ipAddress: varchar("ip_address", { length: 64 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [
+    index("ppdb_otp_phone_idx").on(table.phone, table.createdAt),
+    index("ppdb_otp_expires_idx").on(table.expiresAt)
+  ]
 );
 
 /* -------------------------------------------------------------------------- */
@@ -214,6 +274,7 @@ export const feePlanItem = pgTable(
     amount: numeric("amount", { precision: 12, scale: 2, mode: "number" }).notNull(),
     scope: feeScopeEnum("scope").notNull().default("pondok"),
     isMandatory: boolean("is_mandatory").notNull().default(true),
+    isRecurring: boolean("is_recurring").notNull().default(false),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
   },
@@ -235,6 +296,7 @@ export const registration = pgTable(
     categoryId: integer("category_id")
       .notNull()
       .references(() => santriCategory.id),
+    accountId: uuid("account_id").references(() => ppdbAccount.id, { onDelete: "set null" }),
     source: registrationSourceEnum("source").notNull().default("online"),
     status: registrationStatusEnum("status").notNull().default("submitted"),
     registrationDate: timestamp("registration_date", { withTimezone: true })
@@ -275,8 +337,12 @@ export const registration = pgTable(
     acceptedAt: timestamp("accepted_at", { withTimezone: true }),
     rejectedAt: timestamp("rejected_at", { withTimezone: true }),
     rejectionReason: text("rejection_reason"),
+    revisionNote: text("revision_note"),
     checkedInAt: timestamp("checked_in_at", { withTimezone: true }),
     checkedInBy: integer("checked_in_by").references(() => user.id),
+    documentsVerifiedAt: timestamp("documents_verified_at", { withTimezone: true }),
+    documentsVerifiedBy: integer("documents_verified_by").references(() => user.id),
+    enrolledAt: timestamp("enrolled_at", { withTimezone: true }),
 
     ...timestamps
   },
@@ -286,7 +352,8 @@ export const registration = pgTable(
     index("registration_phone_idx").on(table.phone),
     index("registration_nik_idx").on(table.nik),
     index("registration_status_idx").on(table.status),
-    index("registration_wave_category_idx").on(table.waveId, table.categoryId)
+    index("registration_wave_category_idx").on(table.waveId, table.categoryId),
+    index("registration_account_idx").on(table.accountId)
   ]
 );
 
@@ -379,6 +446,104 @@ export const registrationDocument = pgTable(
 );
 
 /* -------------------------------------------------------------------------- */
+/*                                  Asrama                                    */
+/* -------------------------------------------------------------------------- */
+
+export const building = pgTable(
+  "building",
+  {
+    id: serial("id").primaryKey(),
+    code: varchar("code", { length: 24 }).notNull(),
+    name: varchar("name", { length: 120 }).notNull(),
+    gender: genderEnum("gender").notNull(),
+    notes: text("notes"),
+    isActive: boolean("is_active").notNull().default(true),
+    ...timestamps
+  },
+  (table) => [uniqueIndex("building_code_idx").on(table.code)]
+);
+
+export const room = pgTable(
+  "room",
+  {
+    id: serial("id").primaryKey(),
+    buildingId: integer("building_id")
+      .notNull()
+      .references(() => building.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 80 }).notNull(),
+    capacity: integer("capacity").notNull().default(0),
+    notes: text("notes"),
+    isActive: boolean("is_active").notNull().default(true),
+    ...timestamps
+  },
+  (table) => [uniqueIndex("room_building_name_idx").on(table.buildingId, table.name)]
+);
+
+export const locker = pgTable(
+  "locker",
+  {
+    id: serial("id").primaryKey(),
+    roomId: integer("room_id")
+      .notNull()
+      .references(() => room.id, { onDelete: "cascade" }),
+    code: varchar("code", { length: 40 }).notNull(),
+    notes: text("notes"),
+    isActive: boolean("is_active").notNull().default(true),
+    ...timestamps
+  },
+  (table) => [uniqueIndex("locker_room_code_idx").on(table.roomId, table.code)]
+);
+
+export const santri = pgTable(
+  "santri",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    registrationId: uuid("registration_id")
+      .notNull()
+      .references(() => registration.id, { onDelete: "cascade" }),
+    categoryId: integer("category_id")
+      .notNull()
+      .references(() => santriCategory.id),
+    waveId: integer("wave_id")
+      .notNull()
+      .references(() => registrationWave.id),
+    nis: varchar("nis", { length: 32 }),
+    fullName: varchar("full_name", { length: 160 }).notNull(),
+    gender: genderEnum("gender").notNull(),
+    status: santriStatusEnum("status").notNull().default("active"),
+    joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
+    notes: text("notes"),
+    ...timestamps
+  },
+  (table) => [
+    uniqueIndex("santri_registration_idx").on(table.registrationId),
+    uniqueIndex("santri_nis_idx").on(table.nis),
+    index("santri_name_idx").on(table.fullName)
+  ]
+);
+
+export const santriPlacement = pgTable(
+  "santri_placement",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    santriId: uuid("santri_id")
+      .notNull()
+      .references(() => santri.id, { onDelete: "cascade" }),
+    roomId: integer("room_id")
+      .notNull()
+      .references(() => room.id),
+    lockerId: integer("locker_id").references(() => locker.id, { onDelete: "set null" }),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    notes: text("notes")
+  },
+  (table) => [
+    index("santri_placement_santri_idx").on(table.santriId),
+    index("santri_placement_room_idx").on(table.roomId)
+  ]
+);
+
+/* -------------------------------------------------------------------------- */
 /*                                 Keuangan                                   */
 /* -------------------------------------------------------------------------- */
 
@@ -396,6 +561,23 @@ export const invoice = pgTable(
     ...timestamps
   },
   (table) => [uniqueIndex("invoice_registration_idx").on(table.registrationId)]
+);
+
+export const invoiceItem = pgTable(
+  "invoice_item",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    invoiceId: uuid("invoice_id")
+      .notNull()
+      .references(() => invoice.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 160 }).notNull(),
+    amount: numeric("amount", { precision: 12, scale: 2, mode: "number" }).notNull(),
+    scope: feeScopeEnum("scope").notNull().default("pondok"),
+    isRecurring: boolean("is_recurring").notNull().default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [index("invoice_item_invoice_idx").on(table.invoiceId)]
 );
 
 export const installment = pgTable(

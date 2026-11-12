@@ -2,27 +2,92 @@
   import { page } from "$app/state";
   import {
     LayoutDashboard,
+    BarChart3,
     ClipboardList,
     Wallet,
+    GraduationCap,
+    Building2,
     SlidersHorizontal,
     Newspaper,
     Settings,
     Users,
     LogOut
   } from "@lucide/svelte";
+  import { roleHome, roleLabels, type Role } from "$lib/types/roles";
   import type { LayoutData } from "./$types";
 
   let { data, children }: { data: LayoutData; children: import("svelte").Snippet } = $props();
 
-  const menu = [
-    { href: "/admin", label: "Ringkasan", icon: LayoutDashboard, exact: true },
-    { href: "/admin/pendaftaran", label: "Pendaftaran", icon: ClipboardList },
-    { href: "/admin/pembayaran", label: "Pembayaran", icon: Wallet },
-    { href: "/admin/master", label: "Data Master", icon: SlidersHorizontal },
-    { href: "/admin/konten", label: "Konten", icon: Newspaper },
-    { href: "/admin/pengaturan", label: "Pengaturan", icon: Settings },
-    { href: "/admin/pengguna", label: "Pengguna", icon: Users }
-  ];
+  const menu = $derived(
+    [
+      {
+        href: roleHome(data.user.role),
+        label:
+          data.user.role === "staff_keuangan"
+            ? "Ringkasan Pembayaran"
+            : data.user.role === "staff_pendaftaran"
+              ? "Ringkasan Pendaftaran"
+              : "Ringkasan",
+        icon: LayoutDashboard,
+        exact: true,
+        roles: null
+      },
+      {
+        href: "/admin/keuangan",
+        label: "Ringkasan Keuangan",
+        icon: BarChart3,
+        roles: ["super_admin"] as Role[]
+      },
+      {
+        href: "/admin/pendaftaran",
+        label: "Pendaftaran",
+        icon: ClipboardList,
+        roles: ["super_admin", "staff_pendaftaran"] as Role[]
+      },
+      {
+        href: "/admin/pembayaran",
+        label: "Pembayaran",
+        icon: Wallet,
+        roles: ["super_admin", "staff_keuangan"] as Role[]
+      },
+      {
+        href: "/admin/santri",
+        label: "Data Santri",
+        icon: GraduationCap,
+        roles: ["super_admin", "staff_pendaftaran"] as Role[]
+      },
+      {
+        href: "/admin/asrama",
+        label: "Asrama",
+        icon: Building2,
+        roles: ["super_admin", "staff_pendaftaran"] as Role[]
+      },
+      {
+        href: "/admin/master",
+        label: "Data Master",
+        icon: SlidersHorizontal,
+        roles: ["super_admin"] as Role[]
+      },
+      {
+        href: "/admin/konten",
+        label: "Konten",
+        icon: Newspaper,
+        roles: ["super_admin"] as Role[]
+      },
+      {
+        href: "/admin/pengaturan",
+        label: "Pengaturan",
+        icon: Settings,
+        roles: ["super_admin"] as Role[]
+      },
+      {
+        href: "/admin/pengguna",
+        label: "Pengguna",
+        icon: Users,
+        roles: ["super_admin"] as Role[]
+      }
+    ].filter((item) => !item.roles || item.roles.includes(data.user.role))
+  );
 
   function isActive(href: string, exact?: boolean) {
     return exact ? page.url.pathname === href : page.url.pathname.startsWith(href);
@@ -61,7 +126,12 @@
 
   <div class="flex-1">
     <header class="flex items-center justify-between border-b border-stone-200 bg-white px-5 py-3">
-      <p class="text-sm text-stone-500">Selamat datang, <span class="font-medium text-stone-800">{data.user.fullName}</span></p>
+      <p class="text-sm text-stone-500">
+        Selamat datang, <span class="font-medium text-stone-800">{data.user.fullName}</span>
+        <span class="ml-2 rounded bg-stone-100 px-2 py-0.5 text-xs text-stone-600">
+          {roleLabels[data.user.role]}
+        </span>
+      </p>
       <form method="POST" action="/admin/logout">
         <button
           type="submit"

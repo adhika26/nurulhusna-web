@@ -1,12 +1,13 @@
-import { error } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
 import { asc, eq } from "drizzle-orm";
 import QRCode from "qrcode";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
+import { accessCookieName, verifyAccessToken } from "$lib/server/ppdb/access";
 import { getSettingMap } from "$lib/server/services/setting.service";
 import type { PageServerLoad } from "./$types";
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals, cookies }) => {
   const code = params.kode.trim().toUpperCase();
 
   const [registration] = await db
@@ -15,6 +16,13 @@ export const load: PageServerLoad = async ({ params }) => {
     .where(eq(table.registration.code, code));
 
   if (!registration) error(404, "Kode pendaftaran tidak ditemukan.");
+
+  const accessId = verifyAccessToken(cookies.get(accessCookieName));
+  const isOwner = locals.ppdbAccount && registration.accountId === locals.ppdbAccount.id;
+
+  if (!locals.user && !isOwner && accessId !== registration.id) {
+    redirect(303, `/ppdb/status?kode=${registration.code}`);
+  }
 
   const [category] = await db
     .select()
@@ -37,6 +45,14 @@ export const load: PageServerLoad = async ({ params }) => {
         .from(table.installment)
         .where(eq(table.installment.invoiceId, invoice.id))
         .orderBy(asc(table.installment.sequence))
+    : [];
+
+  const invoiceItems = invoice
+    ? await db
+        .select()
+        .from(table.invoiceItem)
+        .where(eq(table.invoiceItem.invoiceId, invoice.id))
+        .orderBy(asc(table.invoiceItem.sortOrder), asc(table.invoiceItem.createdAt))
     : [];
 
   const settings = await getSettingMap();
@@ -65,6 +81,13 @@ export const load: PageServerLoad = async ({ params }) => {
           status: invoice.status
         }
       : null,
+    invoiceItems: invoiceItems.map((item) => ({
+      id: item.id,
+      name: item.name,
+      amount: Number(item.amount),
+      scope: item.scope,
+      isRecurring: item.isRecurring
+    })),
     installments: installments.map((item) => ({
       sequence: item.sequence,
       amount: Number(item.amount),

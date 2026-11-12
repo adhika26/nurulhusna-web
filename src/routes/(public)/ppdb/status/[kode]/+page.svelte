@@ -15,6 +15,13 @@
 
   const remaining = $derived(data.invoice ? Math.max(data.invoice.totalAmount - paidAmount, 0) : 0);
 
+  const feeGroups = $derived(
+    [
+      { label: "Pondok", items: data.invoiceItems.filter((item) => item.scope === "pondok") },
+      { label: "Sekolah", items: data.invoiceItems.filter((item) => item.scope === "sekolah") }
+    ].filter((group) => group.items.length > 0)
+  );
+
   const unpaidInstallments = $derived(
     data.installments.filter((installment) => installment.status === "unpaid")
   );
@@ -40,6 +47,9 @@
     accepted: "Diterima",
     rejected: "Ditolak",
     checked_in: "Sudah check-in",
+    documents_complete: "Berkas lengkap",
+    enrolled: "Santri aktif",
+    needs_revision: "Perlu revisi",
     draft: "Draft"
   };
 
@@ -49,6 +59,9 @@
     accepted: "bg-brand-50 text-brand-700",
     rejected: "bg-red-50 text-red-700",
     checked_in: "bg-brand-100 text-brand-800",
+    documents_complete: "bg-brand-100 text-brand-800",
+    enrolled: "bg-brand-700 text-white",
+    needs_revision: "bg-amber-50 text-amber-700",
     draft: "bg-stone-100 text-stone-600"
   };
 
@@ -86,6 +99,28 @@
     <p class="mt-4 rounded-lg px-3 py-2 text-sm {form.success ? 'bg-brand-50 text-brand-800' : 'bg-red-50 text-red-700'}">
       {form.message}
     </p>
+  {/if}
+
+  {#if data.registration.status === "rejected"}
+    <div class="mt-4 rounded-2xl bg-red-50 p-4 ring-1 ring-red-200">
+      <p class="text-sm font-semibold text-red-800">Pendaftaran ditolak</p>
+      <p class="mt-1 text-sm text-red-700">
+        {data.registration.rejectionReason || "Silakan hubungi pengurus pondok untuk informasi lebih lanjut."}
+      </p>
+      <p class="mt-2 text-xs text-red-600">
+        Pembayaran tidak dapat dikirim untuk pendaftaran yang sudah ditolak.
+      </p>
+    </div>
+  {:else if data.registration.status === "needs_revision"}
+    <div class="mt-4 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
+      <p class="text-sm font-semibold text-amber-800">Data perlu diperbaiki</p>
+      <p class="mt-1 text-sm text-amber-700">
+        {data.registration.revisionNote || "Silakan perbaiki data pendaftaran melalui akun Anda."}
+      </p>
+      <a href="/ppdb/akun" class="mt-2 inline-flex text-sm font-semibold text-amber-800 hover:underline">
+        Buka akun dan perbaiki data
+      </a>
+    </div>
   {/if}
 
   <section class="mt-6 rounded-2xl bg-white p-5 ring-1 ring-stone-200">
@@ -134,6 +169,42 @@
         ></div>
       </div>
 
+      <p class="mt-2 text-xs text-stone-500">
+        Status santri aktif otomatis setelah cicilan pertama terverifikasi dan berkas lengkap.
+      </p>
+
+      {#if paidAmount > 0}
+        <a
+          href="/ppdb/kuitansi/{data.registration.code}"
+          class="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-brand-200 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-50"
+        >
+          <Printer class="h-3.5 w-3.5" /> Cetak bukti pembayaran
+        </a>
+      {/if}
+
+      {#if feeGroups.length > 0}
+        <div class="mt-5 space-y-3 border-t border-stone-100 pt-4">
+          {#each feeGroups as group (group.label)}
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-stone-500">{group.label}</p>
+              <div class="mt-1 divide-y divide-stone-100">
+                {#each group.items as item (item.id)}
+                  <div class="flex items-center justify-between gap-2 py-1.5 text-sm">
+                    <span class="text-stone-700">
+                      {item.name}
+                      {#if item.isRecurring}
+                        <span class="ml-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">bulanan</span>
+                      {/if}
+                    </span>
+                    <span class="font-medium text-stone-900">{formatRupiah(item.amount)}</span>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
       <div class="mt-5 divide-y divide-stone-100">
         {#each data.installments as installment (installment.id)}
           <div class="flex flex-wrap items-center justify-between gap-2 py-3">
@@ -161,7 +232,7 @@
       </div>
     </section>
 
-    {#if data.invoice.status !== "paid"}
+    {#if data.invoice.status !== "paid" && data.registration.status !== "rejected" && data.registration.status !== "needs_revision"}
       <section class="mt-4 rounded-2xl bg-white p-5 ring-1 ring-stone-200">
         <button
           type="button"
@@ -201,7 +272,7 @@
                   name="amount"
                   type="number"
                   min="1"
-                  step="1000"
+                  step="1"
                   bind:value={amountValue}
                   required
                   class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"

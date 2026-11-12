@@ -20,7 +20,11 @@
     total,
     mode = "online",
     categoryHref = "/ppdb",
-    endpoint = "/api/ppdb/registrations"
+    endpoint = "/api/ppdb/registrations",
+    initialDraft = null,
+    editMode = false,
+    successHref = "",
+    draftOwner = ""
   }: {
     category: { code: string; name: string; institutionName: string };
     academicYear: string;
@@ -28,9 +32,15 @@
     mode?: "online" | "offline";
     categoryHref?: string;
     endpoint?: string;
+    initialDraft?: RegistrationDraft | null;
+    editMode?: boolean;
+    successHref?: string;
+    draftOwner?: string;
   } = $props();
 
-  const storageKey = $derived(`ppdb-draft-${mode}-${category.code}`);
+  const storageKey = $derived(
+    `ppdb-draft-${mode}-${draftOwner || "guest"}-${category.code}`
+  );
 
   let draft = $state<RegistrationDraft>(createEmptyDraft(""));
   let step = $state(1);
@@ -44,6 +54,13 @@
 
   onMount(() => {
     const base = createEmptyDraft(category.code);
+
+    if (initialDraft) {
+      draft = { ...base, ...initialDraft, categoryCode: category.code };
+      hydrated = true;
+      return;
+    }
+
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) {
@@ -63,7 +80,7 @@
   });
 
   $effect(() => {
-    if (!browser || !hydrated) return;
+    if (!browser || !hydrated || editMode) return;
     localStorage.setItem(storageKey, JSON.stringify(draft));
     savedAt = new Date();
   });
@@ -88,7 +105,7 @@
     if (!s.religion) messages.push("Agama wajib dipilih.");
     if (!/^\d{16}$/.test(s.nik)) messages.push("NIK santri harus 16 digit.");
     if (!/^\d{16}$/.test(s.kkNumber)) messages.push("Nomor Kartu Keluarga harus 16 digit.");
-    if (!/^\d{10}$/.test(s.nisn)) messages.push("NISN harus 10 digit.");
+    if (s.nisn && !/^\d{10}$/.test(s.nisn)) messages.push("NISN harus 10 digit.");
     if (!s.schoolName.trim()) messages.push("Asal sekolah / madrasah wajib diisi.");
     if (s.schoolNpsn && !/^\d{8}$/.test(s.schoolNpsn)) messages.push("NPSN harus 8 digit.");
     if (s.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.email)) {
@@ -121,6 +138,10 @@
 
     if (!s.phone.trim() && !draft.father.phone.trim() && !draft.mother.phone.trim()) {
       messages.push("Isi minimal satu nomor HP (santri, ayah, atau ibu) untuk cek status.");
+    }
+
+    if (!draft.scheme) {
+      messages.push("Pilih skema pembayaran terlebih dahulu.");
     }
 
     return messages;
@@ -176,6 +197,12 @@
 
       const result = await response.json().catch(() => ({}));
 
+      if (response.status === 401 && mode !== "offline") {
+        const next = `${window.location.pathname}${window.location.search}`;
+        await goto(`/ppdb/akun/masuk?next=${encodeURIComponent(next)}`);
+        return;
+      }
+
       if (!response.ok) {
         const issues = Array.isArray(result.issues)
           ? result.issues.map((issue: { message: string }) => issue.message)
@@ -185,9 +212,11 @@
         return;
       }
 
-      localStorage.removeItem(storageKey);
+      if (!editMode) localStorage.removeItem(storageKey);
 
-      if (mode === "offline" && result.id) {
+      if (successHref) {
+        await goto(successHref);
+      } else if (mode === "offline" && result.id) {
         await goto(`/admin/pendaftaran/${result.id}`);
       } else {
         await goto(`/ppdb/sukses/${result.code}`);
@@ -232,7 +261,9 @@
 <div class="mx-auto max-w-6xl px-4 py-8">
   <div class="mb-6">
     <a href={categoryHref} class="text-sm font-medium text-brand-700 hover:underline">← Pilih kategori lain</a>
-    <h1 class="mt-2 text-2xl font-bold text-stone-900">Formulir Pendaftaran Santri Baru</h1>
+    <h1 class="mt-2 text-2xl font-bold text-stone-900">
+      {editMode ? "Perbaiki Data Pendaftaran" : "Formulir Pendaftaran Santri Baru"}
+    </h1>
     <p class="mt-1 text-sm text-stone-500">
       {category.institutionName} · Tahun ajaran {academicYear}
     </p>
@@ -293,17 +324,21 @@
         </ol>
 
         <div class="mt-4 border-t border-stone-100 pt-3 text-xs text-stone-400">
-          <p class="flex items-center gap-1.5">
-            <Save class="h-3.5 w-3.5" />
-            {#if savedAt}
-              Tersimpan otomatis di perangkat ini
-            {:else}
-              Isian tersimpan otomatis di perangkat ini
-            {/if}
-          </p>
-          <button type="button" onclick={resetDraft} class="mt-2 text-red-600 hover:underline">
-            Hapus semua isian
-          </button>
+          {#if editMode}
+            <p>Perubahan akan dikirim setelah Anda menekan Simpan perbaikan.</p>
+          {:else}
+            <p class="flex items-center gap-1.5">
+              <Save class="h-3.5 w-3.5" />
+              {#if savedAt}
+                Tersimpan otomatis di perangkat ini
+              {:else}
+                Isian tersimpan otomatis di perangkat ini
+              {/if}
+            </p>
+            <button type="button" onclick={resetDraft} class="mt-2 text-red-600 hover:underline">
+              Hapus semua isian
+            </button>
+          {/if}
         </div>
       </div>
     </aside>
@@ -351,7 +386,13 @@
           }}
         />
       {:else}
-        <ReviewStep {draft} {documents} {total} onEdit={jumpTo} />
+        <ReviewStep
+          {draft}
+          {documents}
+          {total}
+          onEdit={jumpTo}
+          allowSchemeChange={!editMode}
+        />
       {/if}
 
       <div class="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-5">
@@ -382,7 +423,7 @@
             {#if submitting}
               <Loader2 class="h-4 w-4 animate-spin" /> Mengirim…
             {:else}
-              <Send class="h-4 w-4" /> Kirim pendaftaran
+              <Send class="h-4 w-4" /> {editMode ? "Simpan perbaikan" : "Kirim pendaftaran"}
             {/if}
           </button>
         {/if}

@@ -9,12 +9,14 @@ const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 export const sessionCookieName = "admin-session";
 
+import type { Role } from "$lib/types/roles";
+
 export type SessionUser = {
   id: number;
   username: string;
   email: string | null;
   fullName: string;
-  role: "admin" | "staff";
+  role: Role;
 };
 
 export type SessionData = {
@@ -103,12 +105,13 @@ export async function invalidateSession(sessionId: string): Promise<void> {
   await db.delete(table.session).where(eq(table.session.id, sessionId));
 }
 
-type CookieJar = Pick<RequestEvent, "cookies">;
+type CookieJar = Pick<RequestEvent, "cookies" | "url">;
 
 export function setSessionTokenCookie(event: CookieJar, token: string, expiresAt: Date): void {
   event.cookies.set(sessionCookieName, token, {
     httpOnly: true,
     sameSite: "lax",
+    secure: event.url.protocol === "https:",
     expires: expiresAt,
     path: "/"
   });
@@ -118,6 +121,7 @@ export function deleteSessionTokenCookie(event: CookieJar): void {
   event.cookies.delete(sessionCookieName, {
     httpOnly: true,
     sameSite: "lax",
+    secure: event.url.protocol === "https:",
     path: "/"
   });
 }

@@ -32,7 +32,7 @@ export const load: PageServerLoad = async ({ url }) => {
 };
 
 export const actions: Actions = {
-  default: async ({ request, cookies, getClientAddress }) => {
+  default: async ({ request, cookies, getClientAddress, url }) => {
     if (!isAllowed(getClientAddress())) {
       return fail(429, { message: "Terlalu banyak percobaan. Silakan coba lagi beberapa saat." });
     }
@@ -74,9 +74,10 @@ export const actions: Actions = {
     }
 
     cookies.set(accessCookieName, createAccessToken(registration.id), {
-      path: "/ppdb/status",
+      path: "/ppdb",
       httpOnly: true,
       sameSite: "lax",
+      secure: url.protocol === "https:",
       maxAge: ACCESS_DURATION_MS / 1000
     });
 

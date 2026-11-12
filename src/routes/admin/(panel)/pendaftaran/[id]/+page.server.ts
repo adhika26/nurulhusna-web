@@ -1,15 +1,28 @@
 import { error, fail } from "@sveltejs/kit";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import { recordCashPayment } from "$lib/server/ppdb/payment.service";
+import { syncSantriFromRegistration } from "$lib/server/ppdb/santri.service";
+import { canTransition } from "$lib/server/ppdb/registration-flow";
+import { notifyRegistrationStatus } from "$lib/server/ppdb/notification.service";
 import { logAudit } from "$lib/server/services/audit.service";
+import { canManagePayment, canManageRegistration } from "$lib/server/roles";
+import { CHECKLIST_ITEMS } from "$lib/types/registration";
 import type { Actions, PageServerLoad } from "./$types";
 
-const ALLOWED_STATUS = ["submitted", "verified", "accepted", "rejected", "checked_in"] as const;
+const ALLOWED_STATUS = [
+  "submitted",
+  "verified",
+  "accepted",
+  "rejected",
+  "checked_in",
+  "documents_complete",
+  "needs_revision"
+] as const;
 type RegistrationStatus = (typeof ALLOWED_STATUS)[number];
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
   const [registration] = await db
     .select()
     .from(table.registration)
@@ -68,6 +81,19 @@ export const load: PageServerLoad = async ({ params }) => {
         .orderBy(asc(table.payment.createdAt))
     : [];
 
+  const invoiceItems = invoice
+    ? await db
+        .select()
+        .from(table.invoiceItem)
+        .where(eq(table.invoiceItem.invoiceId, invoice.id))
+        .orderBy(asc(table.invoiceItem.sortOrder), asc(table.invoiceItem.createdAt))
+    : [];
+
+  const [santriRow] = await db
+    .select()
+    .from(table.santri)
+    .where(eq(table.santri.registrationId, registration.id));
+
   return {
     registration: {
       ...registration,
@@ -91,6 +117,14 @@ export const load: PageServerLoad = async ({ params }) => {
           status: invoice.status
         }
       : null,
+    invoiceItems: invoiceItems.map((item) => ({
+      id: item.id,
+      name: item.name,
+      amount: Number(item.amount),
+      scope: item.scope,
+      isRecurring: item.isRecurring
+    })),
+    santri: santriRow ?? null,
     installments: installments.map((item) => ({
       id: item.id,
       sequence: item.sequence,
@@ -105,12 +139,21 @@ export const load: PageServerLoad = async ({ params }) => {
       status: item.status,
       createdAt: item.createdAt,
       proofPath: item.proofPath
-    }))
+    })),
+    canReopen: locals.user?.role === "super_admin",
+    permissions: {
+      registration: canManageRegistration(locals.user?.role),
+      payment: canManagePayment(locals.user?.role)
+    }
   };
 };
 
 export const actions: Actions = {
   status: async ({ params, request, locals, getClientAddress }) => {
+    if (!canManageRegistration(locals.user?.role)) {
+      return fail(403, { message: "Anda tidak berhak mengubah status pendaftaran." });
+    }
+
     const formData = await request.formData();
     const status = String(formData.get("status") ?? "") as RegistrationStatus;
     const reason = String(formData.get("reason") ?? "").trim();
@@ -126,8 +169,29 @@ export const actions: Actions = {
 
     if (!registration) return fail(404, { message: "Pendaftaran tidak ditemukan." });
 
-    if (status === "checked_in" && registration.status !== "accepted") {
-      return fail(400, { message: "Santri harus diterima terlebih dahulu sebelum check-in." });
+    if (!canTransition(registration.status, status)) {
+      return fail(400, {
+        message: "Status pendaftaran tidak dapat diubah ke tahap tersebut."
+      });
+    }
+
+    if (status === "documents_complete") {
+      const checklist = await db
+        .select()
+        .from(table.registrationChecklist)
+        .where(eq(table.registrationChecklist.registrationId, params.id));
+
+      const missing = CHECKLIST_ITEMS.filter(
+        (item) =>
+          item.required &&
+          !checklist.some((row) => row.itemKey === item.key && row.isChecked)
+      );
+
+      if (missing.length > 0) {
+        return fail(400, {
+          message: `Berkas wajib belum lengkap: ${missing.map((item) => item.label).join(", ")}.`
+        });
+      }
     }
 
     const now = new Date();
@@ -143,20 +207,41 @@ export const actions: Actions = {
     if (status === "accepted") {
       patch.acceptedAt = now;
       patch.rejectionReason = null;
+      patch.revisionNote = null;
     }
     if (status === "rejected") {
       patch.rejectedAt = now;
       patch.rejectionReason = reason || "Tidak memenuhi persyaratan.";
+      patch.revisionNote = null;
+    }
+    if (status === "needs_revision") {
+      patch.revisionNote = reason || "Perbaiki data pendaftaran.";
+      patch.rejectionReason = null;
     }
     if (status === "checked_in") {
       patch.checkedInAt = now;
       patch.checkedInBy = locals.user?.id ?? null;
+    }
+    if (status === "documents_complete") {
+      patch.documentsVerifiedAt = now;
+      patch.documentsVerifiedBy = locals.user?.id ?? null;
     }
 
     await db
       .update(table.registration)
       .set(patch)
       .where(eq(table.registration.id, params.id));
+
+    let finalStatus: string = status;
+
+    if (status === "documents_complete") {
+      const result = await syncSantriFromRegistration(params.id);
+      if (result.created) finalStatus = "enrolled";
+    }
+
+    void notifyRegistrationStatus(params.id, finalStatus, reason).catch((error) => {
+      console.error("[wa] gagal mengirim notifikasi status", error);
+    });
 
     await logAudit({
       userId: locals.user?.id,
@@ -170,7 +255,112 @@ export const actions: Actions = {
     return { success: true, message: "Status pendaftaran diperbarui." };
   },
 
-  notes: async ({ params, request }) => {
+  reopen: async ({ params, locals, getClientAddress }) => {
+    if (locals.user?.role !== "super_admin") {
+      return fail(403, { message: "Hanya super admin yang dapat membuka kembali pendaftaran." });
+    }
+
+    const [registration] = await db
+      .select()
+      .from(table.registration)
+      .where(eq(table.registration.id, params.id));
+
+    if (!registration) return fail(404, { message: "Pendaftaran tidak ditemukan." });
+    if (registration.status !== "rejected") {
+      return fail(400, { message: "Hanya pendaftaran yang ditolak yang dapat dibuka kembali." });
+    }
+
+    const [duplicate] = await db
+      .select({ code: table.registration.code })
+      .from(table.registration)
+      .where(
+        and(
+          eq(table.registration.waveId, registration.waveId),
+          eq(table.registration.nik, registration.nik),
+          ne(table.registration.id, registration.id),
+          ne(table.registration.status, "rejected")
+        )
+      )
+      .limit(1);
+
+    if (duplicate) {
+      return fail(400, {
+        message: `Tidak dapat dibuka kembali karena NIK ini sudah punya pendaftaran aktif dengan kode ${duplicate.code}.`
+      });
+    }
+
+    await db
+      .update(table.registration)
+      .set({
+        status: "submitted",
+        rejectedAt: null,
+        rejectionReason: null,
+        revisionNote: null,
+        updatedAt: new Date()
+      })
+      .where(eq(table.registration.id, params.id));
+
+    await logAudit({
+      userId: locals.user?.id,
+      action: "registration.reopen",
+      entityType: "registration",
+      entityId: params.id,
+      ipAddress: getClientAddress()
+    });
+
+    return { success: true, message: "Pendaftaran dibuka kembali ke status terkirim." };
+  },
+
+  checklist: async ({ params, request, locals }) => {
+    if (!canManageRegistration(locals.user?.role)) {
+      return fail(403, { message: "Anda tidak berhak mengubah kelengkapan berkas." });
+    }
+
+    const formData = await request.formData();
+    const checked = new Set(formData.getAll("items").map((value) => String(value)));
+    const existing = await db
+      .select()
+      .from(table.registrationChecklist)
+      .where(eq(table.registrationChecklist.registrationId, params.id));
+
+    await db.transaction(async (tx) => {
+      for (const item of CHECKLIST_ITEMS) {
+        const isChecked = checked.has(item.key);
+        const row = existing.find((entry) => entry.itemKey === item.key);
+
+        if (row) {
+          await tx
+            .update(table.registrationChecklist)
+            .set({ isChecked })
+            .where(eq(table.registrationChecklist.id, row.id));
+        } else {
+          await tx.insert(table.registrationChecklist).values({
+            registrationId: params.id,
+            itemKey: item.key,
+            isChecked
+          });
+        }
+      }
+    });
+
+    await syncSantriFromRegistration(params.id);
+
+    await logAudit({
+      userId: locals.user?.id,
+      action: "registration.checklist",
+      entityType: "registration",
+      entityId: params.id,
+      metadata: { checked: [...checked] }
+    });
+
+    return { success: true, message: "Kelengkapan berkas disimpan." };
+  },
+
+  notes: async ({ params, request, locals }) => {
+    if (!canManageRegistration(locals.user?.role)) {
+      return fail(403, { message: "Anda tidak berhak mengubah catatan." });
+    }
+
     const formData = await request.formData();
     const notes = String(formData.get("notes") ?? "").trim();
 
@@ -183,6 +373,10 @@ export const actions: Actions = {
   },
 
   cash: async ({ params, request, locals, getClientAddress }) => {
+    if (!canManagePayment(locals.user?.role)) {
+      return fail(403, { message: "Anda tidak berhak mencatat pembayaran." });
+    }
+
     const formData = await request.formData();
     const invoiceId = String(formData.get("invoiceId") ?? "");
     const installmentId = String(formData.get("installmentId") ?? "").trim() || null;

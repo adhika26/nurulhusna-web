@@ -85,6 +85,21 @@
       </nav>
 
       <div class="flex items-center gap-2">
+        {#if data.account}
+          <a
+            href="/ppdb/akun"
+            class="hidden rounded-full border border-stone-200 px-4 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-50 sm:inline-flex"
+          >
+            Akun Saya
+          </a>
+        {:else}
+          <a
+            href="/ppdb/akun/masuk"
+            class="hidden rounded-full border border-stone-200 px-4 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-50 sm:inline-flex"
+          >
+            Masuk
+          </a>
+        {/if}
         <a
           href="/ppdb"
           class="hidden rounded-full bg-brand-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-800 sm:inline-flex"
@@ -124,6 +139,31 @@
               {item.label}
             </a>
           {/each}
+          {#if data.account}
+            <a
+              href="/ppdb/akun"
+              onclick={closeMenu}
+              class="flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+            >
+              Akun Saya
+            </a>
+            <form method="POST" action="/ppdb/akun/keluar" onsubmit={closeMenu}>
+              <button
+                type="submit"
+                class="flex min-h-11 w-full items-center rounded-xl px-4 text-left text-sm font-semibold text-stone-700 hover:bg-stone-50"
+              >
+                Keluar akun
+              </button>
+            </form>
+          {:else}
+            <a
+              href="/ppdb/akun/masuk"
+              onclick={closeMenu}
+              class="flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+            >
+              Masuk akun
+            </a>
+          {/if}
           <a
             href="/ppdb"
             onclick={closeMenu}

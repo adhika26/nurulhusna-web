@@ -99,7 +99,7 @@
         <label class="block">
           <span class="mb-1 block text-sm font-medium text-stone-700">Kode gelombang</span>
           <input name="code" value={wave.code ?? ""} placeholder="G1" class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
-          <span class="mt-1 block text-xs text-stone-400">Dipakai pada kode pendaftaran, mis. NH-2627-MI13-G1-0001.</span>
+          <span class="mt-1 block text-xs text-stone-400">Label singkat gelombang, mis. G1.</span>
         </label>
         <div class="hidden sm:block"></div>
         <label class="block">

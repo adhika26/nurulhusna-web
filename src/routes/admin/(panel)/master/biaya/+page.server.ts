@@ -121,6 +121,7 @@ export const actions: Actions = {
       amount,
       scope,
       isMandatory: formData.get("isMandatory") === "on",
+      isRecurring: formData.get("isRecurring") === "on",
       sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0
     });
 
@@ -155,6 +156,7 @@ export const actions: Actions = {
         amount,
         scope: scope === "sekolah" ? "sekolah" : "pondok",
         isMandatory: formData.get("isMandatory") === "on",
+        isRecurring: formData.get("isRecurring") === "on",
         sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0
       })
       .where(eq(table.feePlanItem.id, id));

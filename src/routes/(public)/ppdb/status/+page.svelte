@@ -33,7 +33,7 @@
         <input
           name="kode"
           value={form && "kode" in form && form.kode ? form.kode : data.kode}
-          placeholder="NH-2627-MI13-0001"
+          placeholder="NH-482913"
           required
           class="w-full bg-transparent py-2 font-mono text-sm outline-none"
         />

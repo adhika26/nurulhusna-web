@@ -11,7 +11,10 @@
     { value: "verified", label: "Terverifikasi" },
     { value: "accepted", label: "Diterima" },
     { value: "rejected", label: "Ditolak" },
-    { value: "checked_in", label: "Check-in" }
+    { value: "checked_in", label: "Check-in" },
+    { value: "documents_complete", label: "Berkas lengkap" },
+    { value: "enrolled", label: "Santri aktif" },
+    { value: "needs_revision", label: "Perlu revisi" }
   ];
 
   const statusLabel: Record<string, string> = {
@@ -20,6 +23,9 @@
     accepted: "Diterima",
     rejected: "Ditolak",
     checked_in: "Check-in",
+    documents_complete: "Berkas lengkap",
+    enrolled: "Santri aktif",
+    needs_revision: "Perlu revisi",
     draft: "Draft"
   };
 
@@ -28,7 +34,10 @@
     verified: "bg-indigo-50 text-indigo-700",
     accepted: "bg-brand-50 text-brand-700",
     rejected: "bg-red-50 text-red-700",
-    checked_in: "bg-brand-100 text-brand-800"
+    checked_in: "bg-brand-100 text-brand-800",
+    documents_complete: "bg-brand-100 text-brand-800",
+    enrolled: "bg-brand-700 text-white",
+    needs_revision: "bg-amber-50 text-amber-700"
   };
 
   const invoiceLabel: Record<string, string> = {

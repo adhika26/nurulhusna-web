@@ -17,12 +17,20 @@ async function main() {
   const username = readArg("--username")?.trim().toLowerCase();
   const password = readArg("--password");
   const name = readArg("--name") ?? "Administrator";
-  const role = (readArg("--role") ?? "admin") as "admin" | "staff";
+  const role = (readArg("--role") ?? "super_admin") as
+    | "super_admin"
+    | "staff_pendaftaran"
+    | "staff_keuangan";
 
   if (!username || !password) {
     console.error(
-      'Penggunaan: npm run create:admin -- --username admin --password "rahasia123" --name "Nama Lengkap"'
+      'Penggunaan: npm run create:admin -- --username admin --password "rahasia123" --name "Nama Lengkap" --role super_admin'
     );
+    process.exit(1);
+  }
+
+  if (!["super_admin", "staff_pendaftaran", "staff_keuangan"].includes(role)) {
+    console.error("Role harus super_admin, staff_pendaftaran, atau staff_keuangan.");
     process.exit(1);
   }
 

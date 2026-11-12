@@ -3,7 +3,16 @@ import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import type { PageServerLoad } from "./$types";
 
-const STATUSES = ["submitted", "verified", "accepted", "rejected", "checked_in"] as const;
+const STATUSES = [
+  "submitted",
+  "verified",
+  "accepted",
+  "rejected",
+  "checked_in",
+  "documents_complete",
+  "enrolled",
+  "needs_revision"
+] as const;
 type Status = (typeof STATUSES)[number];
 
 export const load: PageServerLoad = async ({ url }) => {

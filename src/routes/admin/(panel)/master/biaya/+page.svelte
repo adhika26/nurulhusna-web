@@ -86,6 +86,9 @@
           <label class="block sm:col-span-4">
             <span class="mb-1 block text-xs font-medium text-stone-500">Nama komponen</span>
             <input name="name" value={item.name} required class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+            {#if item.isRecurring}
+              <span class="mt-1 inline-block rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">bulanan</span>
+            {/if}
           </label>
           <label class="block sm:col-span-3">
             <span class="mb-1 block text-xs font-medium text-stone-500">Nominal (Rp)</span>
@@ -102,10 +105,14 @@
             <span class="mb-1 block text-xs font-medium text-stone-500">Urutan</span>
             <input name="sortOrder" type="number" value={item.sortOrder} class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
           </label>
-          <div class="flex items-center gap-2 sm:col-span-2">
+          <div class="flex flex-wrap items-center gap-3 sm:col-span-2">
             <label class="flex items-center gap-1.5 text-xs text-stone-600">
               <input type="checkbox" name="isMandatory" checked={item.isMandatory} class="rounded" />
               Wajib
+            </label>
+            <label class="flex items-center gap-1.5 text-xs text-stone-600">
+              <input type="checkbox" name="isRecurring" checked={item.isRecurring} class="rounded" />
+              Bulanan
             </label>
           </div>
           <div class="flex gap-2 sm:col-span-12">
@@ -152,10 +159,16 @@
         <span class="mb-1 block text-xs font-medium text-stone-500">Urutan</span>
         <input name="sortOrder" type="number" value={data.items.length + 1} class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
       </label>
-      <label class="flex items-center gap-1.5 pb-2 text-xs text-stone-600 sm:col-span-2">
-        <input type="checkbox" name="isMandatory" checked class="rounded" />
-        Wajib dibayar
-      </label>
+      <div class="flex flex-wrap items-center gap-3 pb-2 sm:col-span-2">
+        <label class="flex items-center gap-1.5 text-xs text-stone-600">
+          <input type="checkbox" name="isMandatory" checked class="rounded" />
+          Wajib
+        </label>
+        <label class="flex items-center gap-1.5 text-xs text-stone-600">
+          <input type="checkbox" name="isRecurring" class="rounded" />
+          Bulanan
+        </label>
+      </div>
       <div class="sm:col-span-12">
         <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800">
           <Plus class="h-4 w-4" /> Tambah komponen

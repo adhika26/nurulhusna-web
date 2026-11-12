@@ -26,13 +26,22 @@ const categories = [
     sortOrder: 2
   },
   {
-    code: "MTS",
-    name: "Mondok + MTs",
+    code: "MTS_PA",
+    name: "Mondok + MTs Putra",
     institutionName: "MTs. Nurul Chusna",
     educationLevel: "mts" as const,
     gradeRange: "7-9",
-    description: "Santri mukim di pondok dan menempuh pendidikan formal MTs.",
+    description: "Santri putra mukim di pondok dan menempuh pendidikan formal MTs.",
     sortOrder: 3
+  },
+  {
+    code: "MTS_PI",
+    name: "Mondok + MTs Putri",
+    institutionName: "MTs. Nurul Chusna",
+    educationLevel: "mts" as const,
+    gradeRange: "7-9",
+    description: "Santri putri mukim di pondok dan menempuh pendidikan formal MTs.",
+    sortOrder: 4
   },
   {
     code: "MONDOK",
@@ -41,7 +50,7 @@ const categories = [
     educationLevel: "none" as const,
     gradeRange: null,
     description: "Santri mukim di pondok tanpa menempuh pendidikan formal di yayasan.",
-    sortOrder: 4
+    sortOrder: 5
   }
 ];
 

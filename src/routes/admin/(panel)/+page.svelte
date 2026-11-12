@@ -1,16 +1,65 @@
 <script lang="ts">
-  import { ClipboardList, Clock, UserCheck, Wallet } from "@lucide/svelte";
+  import { ClipboardList, Clock, GraduationCap, UserCheck, Wallet } from "@lucide/svelte";
   import { formatDate, formatRupiah } from "$lib/utils/format";
   import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
 
-  const cards = $derived([
-    { label: "Total pendaftar", value: String(data.stats.total), icon: ClipboardList, href: "/admin/pendaftaran" },
-    { label: "Perlu verifikasi", value: String(data.stats.submitted), icon: Clock, href: "/admin/pendaftaran?status=submitted" },
-    { label: "Pembayaran pending", value: String(data.stats.pendingPayments), icon: Wallet, href: "/admin/pembayaran" },
-    { label: "Santri diterima", value: String(data.stats.accepted), icon: UserCheck, href: "/admin/pendaftaran?status=accepted" }
-  ]);
+  const cards = $derived(
+    data.role === "staff_pendaftaran"
+      ? [
+          {
+            label: "Total pendaftar",
+            value: String(data.stats.total),
+            icon: ClipboardList,
+            href: "/admin/pendaftaran"
+          },
+          {
+            label: "Perlu diproses",
+            value: String(data.stats.submitted),
+            icon: Clock,
+            href: "/admin/pendaftaran?status=submitted"
+          },
+          {
+            label: "Sudah diterima",
+            value: String(data.stats.accepted),
+            icon: UserCheck,
+            href: "/admin/pendaftaran?status=accepted"
+          },
+          {
+            label: "Santri aktif",
+            value: String(data.stats.santri),
+            icon: GraduationCap,
+            href: "/admin/santri"
+          }
+        ]
+      : [
+          {
+            label: "Total pendaftar",
+            value: String(data.stats.total),
+            icon: ClipboardList,
+            href: "/admin/pendaftaran"
+          },
+          {
+            label: "Perlu verifikasi",
+            value: String(data.stats.submitted),
+            icon: Clock,
+            href: "/admin/pendaftaran?status=submitted"
+          },
+          {
+            label: "Pembayaran pending",
+            value: String(data.stats.pendingPayments),
+            icon: Wallet,
+            href: "/admin/pembayaran"
+          },
+          {
+            label: "Santri aktif",
+            value: String(data.stats.santri),
+            icon: GraduationCap,
+            href: "/admin/santri"
+          }
+        ]
+  );
 
   const statusLabel: Record<string, string> = {
     submitted: "Terkirim",
@@ -18,6 +67,9 @@
     accepted: "Diterima",
     rejected: "Ditolak",
     checked_in: "Check-in",
+    documents_complete: "Berkas lengkap",
+    enrolled: "Santri aktif",
+    needs_revision: "Perlu revisi",
     draft: "Draft"
   };
 </script>
@@ -29,9 +81,11 @@
     <h1 class="text-2xl font-semibold text-stone-900">Ringkasan</h1>
     <p class="mt-1 text-sm text-stone-500">Halo, {data.user.fullName}.</p>
   </div>
-  <p class="text-sm text-stone-500">
-    Pembayaran terverifikasi: <span class="font-semibold text-brand-700">{formatRupiah(data.stats.verifiedAmount)}</span>
-  </p>
+  {#if data.role === "super_admin"}
+    <p class="text-sm text-stone-500">
+      Pembayaran terverifikasi: <span class="font-semibold text-brand-700">{formatRupiah(data.stats.verifiedAmount)}</span>
+    </p>
+  {/if}
 </div>
 
 <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

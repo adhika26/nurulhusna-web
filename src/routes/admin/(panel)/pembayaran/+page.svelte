@@ -37,7 +37,7 @@
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p class="font-semibold text-stone-900">
-                <a href="/admin/pendaftaran/{row.registration.id}" class="hover:underline">{row.registration.fullName}</a>
+                <a href="/admin/keuangan/pendaftaran/{row.registration.id}" class="hover:underline">{row.registration.fullName}</a>
               </p>
               <p class="font-mono text-xs text-stone-500">{row.registration.code}</p>
               <p class="mt-1 text-sm text-stone-600">
@@ -61,6 +61,7 @@
           </div>
 
           <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-stone-100 pt-4">
+            {#if data.permissions.payment}
             <form method="POST" action="?/verify">
               <input type="hidden" name="id" value={row.payment.id} />
               <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-800">
@@ -93,11 +94,48 @@
                 <XCircle class="h-3.5 w-3.5" /> Tolak
               </button>
             {/if}
+            {:else}
+              <p class="text-xs text-stone-500">Hanya staff keuangan yang dapat memverifikasi pembayaran.</p>
+            {/if}
           </div>
         </div>
       {/each}
     </div>
   {/if}
+</section>
+
+<section class="mt-8">
+  <h2 class="text-sm font-semibold uppercase tracking-wide text-stone-500">Tagihan</h2>
+  <div class="mt-3 overflow-hidden rounded-xl bg-white ring-1 ring-stone-200">
+    {#if data.invoices.length === 0}
+      <p class="p-5 text-sm text-stone-500">Belum ada tagihan.</p>
+    {:else}
+      <div class="divide-y divide-stone-100">
+        {#each data.invoices as invoice (invoice.id)}
+          <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-sm">
+            <div>
+              <a href="/admin/keuangan/pendaftaran/{invoice.registration.id}" class="font-medium text-stone-800 hover:underline">
+                {invoice.registration.fullName}
+              </a>
+              <p class="font-mono text-xs text-stone-400">
+                {invoice.registration.code} · {invoice.categoryName}
+              </p>
+            </div>
+            <div class="text-right">
+              <p class="font-medium text-stone-800">{formatRupiah(invoice.totalAmount)}</p>
+              <p class="text-xs {invoice.status === 'paid' ? 'text-brand-700' : 'text-amber-600'}">
+                {invoice.status === "paid"
+                  ? "Lunas"
+                  : invoice.status === "partial"
+                    ? `Sisa ${formatRupiah(invoice.remaining)}`
+                    : "Belum dibayar"}
+              </p>
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
 </section>
 
 <section class="mt-8">

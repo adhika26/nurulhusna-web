@@ -14,4 +14,5 @@
   category={data.category}
   academicYear={data.academicYear}
   total={data.total}
+  draftOwner={data.draftOwner}
 />

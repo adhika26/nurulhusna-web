@@ -4,10 +4,11 @@ import { verify } from "@node-rs/argon2";
 import { db } from "$lib/server/db";
 import * as table from "$lib/server/db/schema";
 import * as auth from "$lib/server/auth";
+import { roleHome } from "$lib/types/roles";
 import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ locals }) => {
-  if (locals.user) redirect(303, "/admin");
+  if (locals.user) redirect(303, roleHome(locals.user.role));
   return {};
 };
 
@@ -51,6 +52,6 @@ export const actions: Actions = {
       .set({ lastLoginAt: new Date() })
       .where(eq(table.user.id, user.id));
 
-    redirect(303, "/admin");
+    redirect(303, roleHome(user.role));
   }
 };

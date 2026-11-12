@@ -11,12 +11,14 @@
     draft,
     documents,
     total,
-    onEdit
+    onEdit,
+    allowSchemeChange = true
   }: {
     draft: RegistrationDraft;
     documents: Record<string, File>;
     total: number;
     onEdit: (step: number) => void;
+    allowSchemeChange?: boolean;
   } = $props();
 
   type Row = { label: string; value: string; required?: boolean; emptyLabel?: string };
@@ -38,7 +40,7 @@
       title: "Data calon santri",
       rows: [
         { label: "Nama lengkap", value: draft.student.fullName, required: true },
-        { label: "NISN", value: draft.student.nisn, required: true },
+        { label: "NISN", value: draft.student.nisn },
         { label: "NIS lokal", value: draft.student.localNis },
         { label: "NIK", value: draft.student.nik, required: true },
         { label: "Nomor Kartu Keluarga", value: draft.student.kkNumber, required: true },
@@ -218,10 +220,16 @@
 
   <section class="rounded-xl border border-stone-200 bg-white p-4">
     <h3 class="text-sm font-semibold text-stone-800">Skema pembayaran</h3>
-    <p class="mt-1 text-xs text-stone-400">Pilih cara pembayaran biaya pendaftaran.</p>
-    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+    {#if allowSchemeChange}
+      <p class="mt-1 text-xs text-stone-400">Pilih cara pembayaran biaya pendaftaran.</p>
+    {:else}
+      <p class="mt-1 text-xs text-stone-400">
+        Skema pembayaran tidak dapat diubah saat perbaikan data. Hubungi pengurus jika perlu diubah.
+      </p>
+    {/if}
+    <div class="mt-3 grid gap-3 sm:grid-cols-2 {allowSchemeChange ? '' : 'pointer-events-none opacity-60'}">
       <label class="cursor-pointer rounded-xl border p-4 {draft.scheme === 'full' ? 'border-brand-500 bg-brand-50' : 'border-stone-200 bg-white hover:border-stone-300'}">
-        <input type="radio" bind:group={draft.scheme} value="full" class="sr-only" />
+        <input type="radio" bind:group={draft.scheme} value="full" disabled={!allowSchemeChange} class="sr-only" />
         <span class="flex items-center justify-between">
           <span class="font-medium text-stone-900">Lunas</span>
           {#if draft.scheme === "full"}<Check class="h-4 w-4 text-brand-700" />{/if}
@@ -229,7 +237,7 @@
         <span class="mt-1 block text-sm text-stone-600">Bayar sekali: <strong>{formatRupiah(total)}</strong></span>
       </label>
       <label class="cursor-pointer rounded-xl border p-4 {draft.scheme === 'installment_3' ? 'border-brand-500 bg-brand-50' : 'border-stone-200 bg-white hover:border-stone-300'}">
-        <input type="radio" bind:group={draft.scheme} value="installment_3" class="sr-only" />
+        <input type="radio" bind:group={draft.scheme} value="installment_3" disabled={!allowSchemeChange} class="sr-only" />
         <span class="flex items-center justify-between">
           <span class="font-medium text-stone-900">Cicilan 3×</span>
           {#if draft.scheme === "installment_3"}<Check class="h-4 w-4 text-brand-700" />{/if}

@@ -100,6 +100,32 @@
         </span>
       </div>
 
+      {#if data.invoiceItems.length > 0}
+        <div class="mt-4 space-y-3 border-t border-stone-100 pt-4">
+          {#each [{ label: "Pondok", scope: "pondok" }, { label: "Sekolah", scope: "sekolah" }] as group (group.scope)}
+            {@const items = data.invoiceItems.filter((item) => item.scope === group.scope)}
+            {#if items.length > 0}
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-stone-500">{group.label}</p>
+                <div class="mt-1 divide-y divide-stone-100">
+                  {#each items as item (item.id)}
+                    <div class="flex items-center justify-between gap-2 py-1.5 text-sm">
+                      <span class="text-stone-700">
+                        {item.name}
+                        {#if item.isRecurring}
+                          <span class="ml-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">bulanan</span>
+                        {/if}
+                      </span>
+                      <span class="font-medium text-stone-900">{formatRupiah(item.amount)}</span>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          {/each}
+        </div>
+      {/if}
+
       <div class="mt-4 divide-y divide-stone-100">
         {#each data.installments as installment (installment.sequence)}
           <div class="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
